@@ -3,37 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎄 Новогодний Чат 🎄</title>
+    <title>🎄 Новогодний Чат Pro 🎄</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
             min-height: 100vh; overflow-x: hidden; position: relative;
         }
 
-        /* --- Анимации фона --- */
-        .snowflake { position: fixed; top: -10px; color: white; pointer-events: none; z-index: 1; animation: fall linear infinite; }
-        @keyframes fall { to { transform: translateY(100vh); } }
-        .firework { position: fixed; font-size: 40px; pointer-events: none; z-index: 9999; animation: firework 1s ease-out forwards; }
-        @keyframes firework { 0% { transform: scale(0); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.8; } 100% { transform: scale(0.5); opacity: 0; } }
+        /* --- Снежинки (Вернул эмодзи) --- */
+        .snowflake { 
+            position: fixed; top: -10px; color: #fff; pointer-events: none; z-index: 1; 
+            animation: fall linear infinite; font-size: 20px;
+        }
+        @keyframes fall { 
+            to { transform: translateY(100vh) rotate(360deg); } 
+        }
+
+        /* --- Салют на CSS (Без символов, чтобы не было квадратов) --- */
+        .firework-particle {
+            position: fixed; width: 6px; height: 6px; border-radius: 50%;
+            pointer-events: none; z-index: 9999;
+            animation: explode 1s ease-out forwards;
+        }
+        @keyframes explode {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
 
         .container { max-width: 900px; margin: 0 auto; padding: 20px; position: relative; z-index: 10; }
 
-        /* --- Возвращенный Дизайн Таймера --- */
         .timer-box {
             background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
             border-radius: 30px; padding: 30px; margin-bottom: 20px; border: 2px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); text-align: center;
         }
-        .timer-title { color: white; font-size: 28px; font-weight: bold; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); }
+        .timer-title { color: white; font-size: 28px; font-weight: bold; margin-bottom: 20px; }
         .timer { display: flex; justify-content: center; gap: 20px; }
         .time-unit { background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(250, 204, 21, 0.5); border-radius: 20px; padding: 20px; min-width: 90px; }
-        .time-value { font-size: 48px; font-weight: bold; color: #fcd34d; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); }
+        .time-value { font-size: 48px; font-weight: 800; color: #fcd34d; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3); }
         .time-label { color: rgba(255, 255, 255, 0.8); font-size: 14px; margin-top: 5px; }
 
-        /* --- Возвращенный Дизайн Чата --- */
         .chat-container {
             background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
             border-radius: 30px; border: 2px solid rgba(255, 255, 255, 0.2); overflow: hidden;
@@ -44,21 +56,26 @@
             padding: 20px; border-bottom: 2px solid rgba(255, 255, 255, 0.2);
             display: flex; justify-content: space-between; align-items: center;
         }
+
+        /* Заголовок по просьбе: Белый и жирный */
+        .chat-title-main { 
+            color: #ffffff !important; 
+            font-weight: 900 !important; 
+            font-size: 28px; 
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+
         .messages { height: 400px; overflow-y: auto; padding: 20px; background: rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; }
-        
-        .message { margin-bottom: 15px; display: flex; flex-direction: column; max-width: 70%; animation: slideIn 0.3s ease-out; position: relative; }
+        .message { margin-bottom: 15px; display: flex; flex-direction: column; max-width: 75%; animation: slideIn 0.3s ease-out; position: relative; }
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } }
-        
         .message.own { align-self: flex-end; }
         .message.other { align-self: flex-start; }
         
-        .message-content {
-            padding: 12px 16px; border-radius: 20px; cursor: pointer; position: relative; transition: transform 0.1s;
-        }
+        .message-content { padding: 12px 16px; border-radius: 20px; cursor: pointer; position: relative; }
         .message.own .message-content { background: linear-gradient(135deg, #fbbf24, #f97316); color: white; }
         .message.other .message-content { background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(255, 255, 255, 0.3); color: white; }
         
-        .message-user { font-size: 12px; opacity: 0.7; margin-bottom: 4px; }
+        .message-user { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #fff; }
         .message.own .message-user { text-align: right; }
 
         .like-badge {
@@ -68,26 +85,25 @@
 
         .input-area { padding: 20px; background: rgba(255, 255, 255, 0.05); display: flex; gap: 10px; }
         input { flex: 1; padding: 15px; border-radius: 15px; border: 2px solid rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.2); color: white; outline: none; }
-        button { padding: 10px 25px; border-radius: 15px; border: none; background: #f59e0b; color: white; font-weight: bold; cursor: pointer; }
+        button.action-btn { padding: 10px 25px; border-radius: 15px; border: none; background: #f59e0b; color: white; font-weight: bold; cursor: pointer; }
 
-        /* --- Модалки --- */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-        .modal-content { background: rgba(30, 41, 59, 0.9); padding: 30px; border-radius: 30px; width: 90%; max-width: 450px; text-align: center; color: white; border: 2px solid rgba(255,255,255,0.1); }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-content { background: #1e293b; padding: 30px; border-radius: 30px; width: 90%; max-width: 400px; text-align: center; color: white; border: 1px solid #475569; }
         .hidden { display: none !important; }
 
-        .user-list { max-height: 250px; overflow-y: auto; margin: 20px 0; background: rgba(0,0,0,0.2); border-radius: 15px; padding: 10px; }
+        .user-list { max-height: 250px; overflow-y: auto; margin: 20px 0; background: rgba(0,0,0,0.3); border-radius: 15px; padding: 10px; }
         .user-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .admin-btns button { padding: 5px 10px; margin-left: 5px; border-radius: 8px; border: none; color: white; font-size: 12px; cursor: pointer; }
+        .admin-controls button { padding: 6px 12px; margin: 5px; border-radius: 8px; border: none; color: white; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
 
     <div id="loginModal" class="modal">
         <div class="modal-content">
-            <h1>🎄 С Новым Годом!</h1>
-            <p style="margin: 15px 0;">Введите ваше имя, чтобы войти в чат</p>
-            <input type="text" id="nickInput" placeholder="Ваш ник..." maxlength="15" style="width: 100%;">
-            <button onclick="joinChat()" style="width: 100%; margin-top: 10px;">Войти 🎉</button>
+            <h1 style="color:#fcd34d">🎄 С НОВЫМ ГОДОМ!</h1>
+            <p style="margin: 15px 0;">Введи ник, чтобы войти</p>
+            <input type="text" id="nickInput" placeholder="Никнейм..." maxlength="15" style="width: 100%;">
+            <button onclick="joinChat()" class="action-btn" style="width: 100%; margin-top: 15px;">ВОЙТИ</button>
         </div>
     </div>
 
@@ -95,18 +111,18 @@
         <div class="modal-content">
             <h2>⚙️ Админ-Панель</h2>
             <div class="user-list" id="userList"></div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button onclick="adminAction('santa')" style="background: #10b981;">🎅 От Мороза</button>
-                <button onclick="adminAction('fireworks')" style="background: #8b5cf6;">🎆 Всем салют</button>
-                <button onclick="adminAction('clear')" style="background: #ef4444; grid-column: span 2;">🗑️ Очистить весь чат</button>
+            <div class="admin-controls">
+                <button onclick="adminAction('santa')" style="background: #10b981;">🎅 Поздравление</button>
+                <button onclick="adminAction('fireworks')" style="background: #8b5cf6;">🎆 Запуск салюта</button>
+                <button onclick="adminAction('clear')" style="background: #ef4444; width: 90%;">🗑️ Очистить чат</button>
             </div>
-            <button onclick="closeAdmin()" style="background: rgba(255,255,255,0.1); margin-top: 15px; width: 100%;">Закрыть</button>
+            <button onclick="closeAdmin()" style="background: #475569; margin-top: 15px; width: 100%; border-radius:10px; border:none; padding:10px; color:white;">Закрыть</button>
         </div>
     </div>
 
     <div class="container">
         <div class="timer-box">
-            <div class="timer-title" id="timerTitle">⏰ До Нового Года:</div>
+            <div class="timer-title" id="timerTitle">⏰ ДО НОВОГО ГОДА:</div>
             <div class="timer">
                 <div class="time-unit"><div class="time-value" id="h">00</div><div class="time-label">часов</div></div>
                 <div class="time-unit"><div class="time-value" id="m">00</div><div class="time-label">минут</div></div>
@@ -117,18 +133,18 @@
         <div class="chat-container">
             <div class="chat-header">
                 <div>
-                    <h3 id="userNameDisplay">Новогодний Чат</h3>
+                    <h3 class="chat-title-main">Новогодний Чат</h3>
                     <p style="font-size: 12px; color: rgba(255,255,255,0.7);" id="statusSub">Загрузка...</p>
                 </div>
                 <div>
-                    <button style="background:none; font-size:20px; cursor:pointer;" onclick="logout()">🚪</button>
-                    <button style="background:none; font-size:20px; cursor:pointer;" onclick="openAdmin()">⚙️</button>
+                    <button style="background:none; border:none; font-size:24px; cursor:pointer;" onclick="logout()" title="Выйти">🚪</button>
+                    <button style="background:none; border:none; font-size:24px; cursor:pointer;" onclick="openAdmin()" title="Админ">⚙️</button>
                 </div>
             </div>
             <div class="messages" id="chatBox"></div>
             <div class="input-area">
-                <input type="text" id="msgInput" placeholder="Напишите сообщение...">
-                <button onclick="sendMsg()">📨</button>
+                <input type="text" id="msgInput" placeholder="Введите сообщение...">
+                <button class="action-btn" onclick="sendMsg()">📨</button>
             </div>
         </div>
     </div>
@@ -154,35 +170,42 @@
         const ADMIN_PASS = "2025";
 
         // --- УВЕДОМЛЕНИЯ ---
-        if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
-        function showNotification(user, text) {
-            if (document.hidden && Notification.permission === "granted") {
-                new Notification("🎄 Сообщение", { body: `${user}: ${text}` });
+        function requestNotify() {
+            if ("Notification" in window && Notification.permission !== "granted") {
+                Notification.requestPermission();
             }
         }
 
-        // --- БАН / КИК ЛОГИКА ---
+        function showNotify(user, text) {
+            if (document.visibilityState !== "visible" && Notification.permission === "granted") {
+                new Notification("🎄 " + user, { body: text });
+                // Звук сообщения (опционально)
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                audio.play().catch(()=>{});
+            }
+        }
+
+        // --- БАН / КИК ---
         function checkStatus() {
             if (!myNick) return;
             onValue(ref(db, 'banned/' + myNick), (snap) => {
                 if (snap.exists() && Date.now() < snap.val()) {
-                    alert("❌ Вы забанены до " + new Date(snap.val()).toLocaleTimeString());
+                    alert("Вы забанены до " + new Date(snap.val()).toLocaleTimeString());
                     logout();
                 }
             });
             onValue(ref(db, 'users/' + myNick + '/kicked'), (snap) => {
                 if (snap.val() === true) {
                     set(ref(db, 'users/' + myNick + '/kicked'), false);
-                    alert("⚠️ Вас кикнули!");
                     logout();
                 }
             });
         }
 
-        // --- ВХОД ---
         window.joinChat = () => {
             const nick = document.getElementById('nickInput').value.trim();
             if (!nick) return;
+            requestNotify();
             myNick = nick;
             localStorage.setItem('chat_nick', nick);
             set(ref(db, 'users/' + nick), { lastSeen: serverTimestamp(), kicked: false });
@@ -196,7 +219,7 @@
             location.reload();
         };
 
-        // --- ЧАТ (Исправлен Enter) ---
+        // --- ЧАТ ---
         window.sendMsg = () => {
             const inp = document.getElementById('msgInput');
             if (inp.value.trim() && myNick) {
@@ -205,7 +228,7 @@
             }
         };
 
-        // Слушаем Enter в чате
+        // Исправлен Enter
         document.getElementById('msgInput').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') sendMsg();
         });
@@ -229,7 +252,7 @@
             `;
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
-            if (m.user !== myNick) showNotification(m.user, m.text);
+            if (m.user !== myNick) showNotify(m.user, m.text);
         });
 
         window.addLike = (key) => {
@@ -249,15 +272,13 @@
             }
         });
 
-        // --- АДМИНКА (Запоминание) ---
+        // --- АДМИНКА ---
         window.openAdmin = () => {
-            let savedPass = localStorage.getItem('admin_access');
-            if (savedPass === ADMIN_PASS || prompt("Введите пароль админа:") === ADMIN_PASS) {
+            let saved = localStorage.getItem('admin_access');
+            if (saved === ADMIN_PASS || prompt("Пароль админа:") === ADMIN_PASS) {
                 localStorage.setItem('admin_access', ADMIN_PASS);
                 document.getElementById('adminModal').classList.remove('hidden');
                 loadUserList();
-            } else {
-                alert("Неверно!");
             }
         };
 
@@ -269,28 +290,23 @@
                 list.innerHTML = "";
                 snap.forEach(c => {
                     const name = c.key;
-                    list.innerHTML += `
-                        <div class="user-item">
-                            <span>${name}</span>
-                            <div class="admin-btns">
-                                <button style="background:#f97316" onclick="kick('${name}')">Kick</button>
-                                <button style="background:#ef4444" onclick="banPrompt('${name}')">Ban</button>
-                            </div>
+                    list.innerHTML += `<div class="user-item">
+                        <span>${name}</span>
+                        <div class="admin-controls">
+                            <button onclick="kick('${name}')" style="background:orange;">Kick</button>
+                            <button onclick="banPrompt('${name}')" style="background:red;">Ban</button>
                         </div>
-                    `;
+                    </div>`;
                 });
             });
         }
 
         window.kick = (name) => set(ref(db, `users/${name}/kicked`), true);
-        
         window.banPrompt = (name) => {
-            const mins = prompt("На сколько минут забанить пользователя " + name + "?", "10");
-            if (mins) {
-                const until = Date.now() + (parseInt(mins) * 60 * 1000);
-                set(ref(db, 'banned/' + name), until);
+            const m = prompt("На сколько минут забанить " + name + "?", "10");
+            if (m) {
+                set(ref(db, 'banned/' + name), Date.now() + (parseInt(m) * 60000));
                 kick(name);
-                alert(name + " забанен на " + mins + " мин.");
             }
         };
 
@@ -298,33 +314,61 @@
             if (a === 'clear') remove(ref(db, 'messages'));
             if (a === 'fireworks') set(ref(db, 'signal/fire'), Date.now());
             if (a === 'santa') {
-                const t = prompt("Что скажет Санта?");
+                const t = prompt("Сообщение от Мороза:");
                 if (t) push(ref(db, 'messages'), { user: "🎅 Дед Мороз", text: t, time: serverTimestamp() });
             }
         };
 
-        onValue(ref(db, 'signal/fire'), () => launchFireworks());
+        // Слушатель салюта
+        let initSignal = true;
+        onValue(ref(db, 'signal/fire'), (snap) => {
+            if (!initSignal) createCSSFirework();
+            initSignal = false;
+        });
 
         // --- ЭФФЕКТЫ ---
         function createSnow() {
-            for(let i=0; i<30; i++){
-                const s = document.createElement('div'); s.className='snowflake'; s.innerText='❄';
-                s.style.left=Math.random()*100+'%'; s.style.animationDuration=(Math.random()*5+5)+'s';
+            for(let i=0; i<40; i++){
+                const s = document.createElement('div'); 
+                s.className='snowflake'; s.innerText='❄';
+                s.style.left=Math.random()*100+'%'; 
+                s.style.fontSize=Math.random()*10+10+'px';
+                s.style.animationDuration=(Math.random()*5+5)+'s';
+                s.style.opacity = Math.random();
                 document.body.appendChild(s);
             }
         }
-        function launchFireworks() {
-            for(let i=0; i<15; i++){
-                setTimeout(() => {
-                    const f = document.createElement('div'); f.className='firework'; f.innerText='✨';
-                    f.style.left=Math.random()*100+'%'; f.style.top=Math.random()*100+'%';
-                    document.body.appendChild(f); setTimeout(()=>f.remove(), 1000);
-                }, i*100);
+
+        // ПОЛНОСТЬЮ НОВЫЙ САЛЮТ НА CSS (БЕЗ КВАДРАТОВ)
+        function createCSSFirework() {
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#ffffff'];
+            
+            for(let i=0; i<30; i++) {
+                const p = document.createElement('div');
+                p.className = 'firework-particle';
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.random() * 150 + 50;
+                p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+                p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+                
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 1000);
             }
         }
+
         function timer() {
             const diff = new Date(2026, 0, 1) - new Date();
-            if(diff <= 0) { document.getElementById('timerTitle').innerText="🎊 С НОВЫМ ГОДОМ! 🎊"; return; }
+            if(diff <= 0) { 
+                document.getElementById('timerTitle').innerText="🎊 С НОВЫМ ГОДОМ! 🎊"; 
+                if (Math.random() > 0.95) createCSSFirework();
+                return; 
+            }
             document.getElementById('h').innerText = Math.floor(diff/3600000%24).toString().padStart(2,'0');
             document.getElementById('m').innerText = Math.floor(diff/60000%60).toString().padStart(2,'0');
             document.getElementById('s').innerText = Math.floor(diff/1000%60).toString().padStart(2,'0');
