@@ -138,10 +138,11 @@
             font-size: 14px;
         }
 
-        /* Стили для кнопок админа */
-        .admin-controls {
+        /* Кнопки управления */
+        .controls-group {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
 
         .icon-btn {
@@ -162,7 +163,7 @@
 
         .icon-btn:hover {
             background: rgba(255, 255, 255, 0.4);
-            transform: rotate(90deg);
+            transform: scale(1.1);
         }
 
         .delete-btn {
@@ -174,7 +175,6 @@
 
         .delete-btn:hover {
             background: rgba(220, 38, 38, 0.9);
-            transform: scale(1.05);
             box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
         }
 
@@ -399,8 +399,9 @@
                     <div class="chat-title">💬 Новогодний Чат</div>
                     <div class="chat-subtitle" id="chatSubtitle">Загрузка...</div>
                 </div>
-                <div class="admin-controls">
+                <div class="controls-group">
                     <button id="clearChatBtn" class="icon-btn delete-btn hidden" onclick="clearChat()" title="Очистить чат">🗑️</button>
+                    <button class="icon-btn" onclick="logout()" title="Сменить имя / Выйти">🚪</button>
                     <button class="icon-btn" onclick="adminLogin()" title="Вход для админа">⚙️</button>
                 </div>
             </div>
@@ -416,7 +417,6 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        // Добавил 'remove' и 'onValue' в импорты
         import { getDatabase, ref, push, onChildAdded, remove, onValue, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
         const firebaseConfig = {
@@ -433,7 +433,6 @@
         const database = getDatabase(app);
         const messagesRef = ref(database, 'messages');
 
-        // ПАРОЛЬ АДМИНА
         const ADMIN_PASSWORD = "2025"; 
 
         let username = localStorage.getItem('username');
@@ -496,7 +495,6 @@
 
         // --- ЛОГИКА АДМИНА ---
         window.adminLogin = function() {
-            // Если кнопка уже видна, просто прячем её
             const btn = document.getElementById('clearChatBtn');
             if (!btn.classList.contains('hidden')) {
                 btn.classList.add('hidden');
@@ -513,7 +511,7 @@
         };
 
         window.clearChat = function() {
-            if (confirm("Вы точно хотите удалить ВСЕ сообщения навсегда? Это действие нельзя отменить.")) {
+            if (confirm("Вы точно хотите удалить ВСЕ сообщения навсегда?")) {
                 remove(messagesRef)
                     .then(() => {
                         console.log("Чат очищен");
@@ -524,7 +522,14 @@
             }
         };
 
-        // --- КОНЕЦ ЛОГИКИ АДМИНА ---
+        // --- ЛОГИКА ВЫХОДА / СМЕНЫ ИМЕНИ ---
+        window.logout = function() {
+            localStorage.removeItem('username'); // Удаляем имя из памяти
+            username = null;
+            document.getElementById('usernameModal').classList.remove('hidden'); // Показываем окно входа
+            document.getElementById('usernameInput').value = ''; // Очищаем поле ввода
+            document.getElementById('chatSubtitle').textContent = 'Жду гостя...'; // Меняем подзаголовок
+        };
 
         // Установка имени
         window.setUsername = function() {
@@ -552,7 +557,7 @@
             }
         };
 
-        // СЛУШАТЕЛЬ ОЧИСТКИ ЧАТА (Если база пустая)
+        // Слушатель очистки чата
         onValue(messagesRef, (snapshot) => {
             if (!snapshot.exists()) {
                 const messagesDiv = document.getElementById('messages');
@@ -565,13 +570,13 @@
             const message = snapshot.val();
             const messagesDiv = document.getElementById('messages');
             
-            // Удаляем empty state если есть
             const emptyState = messagesDiv.querySelector('.empty-state');
             if (emptyState) {
                 emptyState.remove();
             }
 
             const messageDiv = document.createElement('div');
+            // Проверка на 'own' теперь динамическая (зависит от текущего username)
             messageDiv.className = 'message ' + (message.username === username ? 'own' : 'other');
             
             const time = message.timestamp ? new Date(message.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
