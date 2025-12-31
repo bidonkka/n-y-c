@@ -148,11 +148,60 @@
             padding: 10px 14px; border-radius: 12px;
             max-width: 70%; font-size: 14px; line-height: 1.4;
             animation: msgIn 0.2s ease;
+            position: relative;
+            cursor: pointer;
+            user-select: none;
         }
         @keyframes msgIn { from { opacity: 0; transform: translateY(5px); } }
         .msg.own { align-self: flex-end; background: #f59e0b; color: black; }
         .msg.other { align-self: flex-start; background: rgba(255,255,255,0.2); }
         .msg-user { font-size: 11px; opacity: 0.7; margin-bottom: 3px; }
+        
+        .msg-reaction {
+            position: absolute;
+            bottom: -8px;
+            right: 8px;
+            background: rgba(0,0,0,0.8);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            animation: reactionPop 0.3s ease;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        @keyframes reactionPop {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        
+        .reaction-count {
+            font-size: 11px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .heart-float {
+            position: fixed;
+            font-size: 30px;
+            pointer-events: none;
+            z-index: 9999;
+            animation: floatHeart 1s ease-out forwards;
+        }
+        
+        @keyframes floatHeart {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) scale(1.5);
+            }
+        }
 
         .input-box {
             padding: 15px; display: flex; gap: 10px;
@@ -638,24 +687,93 @@
                 push(ref(db, 'messages'), {
                     user: myNick,
                     text: text,
-                    time: Date.now()
+                    time: Date.now(),
+                    reactions: {}
                 });
                 input.value = '';
             }
         };
 
+        const msgElements = new Map(); // Сохраняем элементы сообщений
+
         onChildAdded(ref(db, 'messages'), (snap) => {
             const msg = snap.val();
+            const msgId = snap.key;
             const box = document.getElementById('chatBox');
             const div = document.createElement('div');
             div.className = `msg ${msg.user === myNick ? 'own' : 'other'}`;
+            div.setAttribute('data-msg-id', msgId);
             div.innerHTML = `
                 <div class="msg-user">${msg.user}</div>
                 <div>${msg.text}</div>
             `;
+            
+            // Показываем реакции если есть
+            if (msg.reactions && Object.keys(msg.reactions).length > 0) {
+                const reactionDiv = document.createElement('div');
+                reactionDiv.className = 'msg-reaction';
+                reactionDiv.innerHTML = `❤️ <span class="reaction-count">${Object.keys(msg.reactions).length}</span>`;
+                div.appendChild(reactionDiv);
+            }
+            
+            // Двойной клик для реакции
+            let lastClick = 0;
+            div.addEventListener('click', () => {
+                const now = Date.now();
+                if (now - lastClick < 300) {
+                    // Двойной клик!
+                    addReaction(msgId, div);
+                }
+                lastClick = now;
+            });
+            
             box.appendChild(div);
+            msgElements.set(msgId, div);
             box.scrollTop = box.scrollHeight;
         });
+
+        // Слушаем изменения реакций
+        onValue(ref(db, 'messages'), (snap) => {
+            snap.forEach((child) => {
+                const msgId = child.key;
+                const msg = child.val();
+                const div = msgElements.get(msgId);
+                
+                if (div && msg.reactions) {
+                    // Обновляем реакции
+                    let reactionDiv = div.querySelector('.msg-reaction');
+                    const count = Object.keys(msg.reactions).length;
+                    
+                    if (count > 0) {
+                        if (!reactionDiv) {
+                            reactionDiv = document.createElement('div');
+                            reactionDiv.className = 'msg-reaction';
+                            div.appendChild(reactionDiv);
+                        }
+                        reactionDiv.innerHTML = `❤️ <span class="reaction-count">${count}</span>`;
+                    } else if (reactionDiv) {
+                        reactionDiv.remove();
+                    }
+                }
+            });
+        });
+
+        function addReaction(msgId, element) {
+            // Добавляем реакцию в базу
+            const reactionRef = ref(db, `messages/${msgId}/reactions/${myNick}`);
+            set(reactionRef, true);
+            
+            // Летящее сердечко
+            const rect = element.getBoundingClientRect();
+            const heart = document.createElement('div');
+            heart.className = 'heart-float';
+            heart.textContent = '❤️';
+            heart.style.left = rect.left + rect.width / 2 + 'px';
+            heart.style.top = rect.top + 'px';
+            document.body.appendChild(heart);
+            
+            setTimeout(() => heart.remove(), 1000);
+        }
 
         // === ENTER ДЛЯ ОТПРАВКИ ===
         document.getElementById('msgInput').addEventListener('keypress', (e) => {
