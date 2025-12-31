@@ -3,34 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎄 Новогодний чат 🎄</title>
-    <style>
+    <title>🎄 Новогодний Кинотеатр Pro 🎄</title>
+    <script src="https://www.youtube.com/iframe_api"></script> <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%); min-height: 100vh; overflow-x: hidden; color: white; }
         
-        /* Снег и частицы */
         .snowflake { position: fixed; top: -10px; color: #fff; pointer-events: none; z-index: 1; animation: fall linear infinite; font-size: 20px; }
         @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
 
         .container { max-width: 900px; margin: 0 auto; padding: 20px; position: relative; z-index: 10; }
 
-        /* --- СИНХРОННЫЙ ПЛЕЕР --- */
+        /* --- УНИВЕРСАЛЬНЫЙ ПЛЕЕР --- */
         .cinema-container {
             background: #000; border: 2px solid #fcd34d; border-radius: 20px;
             overflow: hidden; margin-bottom: 20px; position: relative;
-            box-shadow: 0 0 30px rgba(252, 211, 77, 0.3); display: none; /* Скрыт пока нет видео */
+            box-shadow: 0 0 30px rgba(252, 211, 77, 0.3); display: none;
+            aspect-ratio: 16/9; /* Фиксируем пропорции */
         }
         
-        video { width: 100%; display: block; }
+        /* Слой для YouTube и MP4 */
+        #youtube-player-placeholder, #html5-player { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        #html5-player { object-fit: contain; }
 
-        /* Панель управления (видна только админу через JS) */
+        /* Перекрывающий слой (чтобы обычные юзеры не тыкали паузу сами) */
+        .blocker-layer { position: absolute; inset: 0; z-index: 10; background: transparent; }
+
+        /* Панель управления (Только Админ) */
         .controls-layer {
-            background: rgba(0, 0, 0, 0.7); padding: 10px; display: flex; align-items: center; gap: 10px;
+            position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
+            background: rgba(0, 0, 0, 0.8); padding: 10px; display: flex; align-items: center; gap: 10px;
         }
-        .control-btn { background: none; border: none; color: #fcd34d; font-size: 20px; cursor: pointer; padding: 5px 10px; }
-        .progress-bar { flex: 1; -webkit-appearance: none; height: 5px; background: #444; border-radius: 5px; outline: none; }
-        .progress-bar::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; background: #fcd34d; border-radius: 50%; cursor: pointer; }
-        .time-display { font-size: 12px; font-family: monospace; min-width: 80px; text-align: center; }
+        .control-btn { background: none; border: none; color: #fcd34d; font-size: 24px; cursor: pointer; padding: 0 10px; }
+        .progress-bar { flex: 1; cursor: pointer; height: 5px; }
+        .time-display { font-size: 14px; font-family: monospace; min-width: 100px; text-align: center; }
 
         /* Чат */
         .chat-container { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border-radius: 30px; border: 2px solid rgba(255, 255, 255, 0.2); overflow: hidden; height: 500px; display: flex; flex-direction: column; }
@@ -39,7 +44,6 @@
         .message { margin-bottom: 10px; max-width: 80%; padding: 8px 12px; border-radius: 15px; font-size: 14px; }
         .message.own { align-self: flex-end; background: linear-gradient(135deg, #fbbf24, #f97316); }
         .message.other { align-self: flex-start; background: rgba(255,255,255,0.2); }
-        
         .input-area { padding: 15px; display: flex; gap: 10px; background: rgba(0,0,0,0.2); }
         input { flex: 1; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.2); color: white; outline: none; }
         
@@ -47,7 +51,6 @@
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: flex; justify-content: center; align-items: center; }
         .modal-content { background: #1e293b; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #555; }
         .hidden { display: none !important; }
-        .admin-panel { max-height: 80vh; overflow-y: auto; }
         .user-item { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px solid #333; margin-bottom: 5px; }
     </style>
 </head>
@@ -55,23 +58,21 @@
 
     <div id="loginModal" class="modal">
         <div class="modal-content">
-            <h2 style="color:#fcd34d">🎄 ВХОД В ЧАТ</h2>
+            <h2 style="color:#fcd34d">🎄 КИНО-ЧАТ</h2>
             <input type="text" id="nickInput" placeholder="Никнейм..." style="width:100%; margin:20px 0; padding:10px;">
-            <button onclick="joinChat()" style="width:100%; padding:10px; background:#f59e0b; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">ВОЙТИ</button>
+            <button onclick="joinChat()" style="width:100%; padding:10px; background:#f59e0b; border:none; border-radius:5px; cursor:pointer;">ВОЙТИ</button>
         </div>
     </div>
 
     <div id="adminModal" class="modal hidden">
-        <div class="modal-content admin-panel">
-            <h3>⚙️ Пульт управления</h3>
-            
+        <div class="modal-content">
+            <h3>⚙️ Управление</h3>
             <div style="background:#333; padding:10px; border-radius:10px; margin:15px 0;">
-                <p style="margin-bottom:5px;">🎬 <b>Запустить фильм (.mp4)</b></p>
-                <input type="text" id="movieUrl" placeholder="Ссылка на .mp4 файл" style="width:100%; margin-bottom:10px;">
-                <button onclick="loadMovie()" style="background:#10b981; border:none; padding:8px 20px; color:white; border-radius:5px; cursor:pointer;">▶️ ЗАПУСТИТЬ ПЛЕЕР</button>
-                <button onclick="stopMovie()" style="background:#ef4444; border:none; padding:8px 20px; color:white; border-radius:5px; cursor:pointer; margin-top:5px;">⏹ УБРАТЬ ЭКРАН</button>
+                <p>🎬 <b>Ссылка (YouTube или .mp4):</b></p>
+                <input type="text" id="mediaUrl" placeholder="https://youtube.com/watch?v=..." style="width:100%; margin-bottom:10px; padding:5px;">
+                <button onclick="startMedia()" style="background:#10b981; border:none; padding:8px 20px; color:white; border-radius:5px; cursor:pointer;">▶️ ЗАПУСТИТЬ</button>
+                <button onclick="stopMedia()" style="background:#ef4444; border:none; padding:8px 20px; color:white; border-radius:5px; cursor:pointer; margin-top:5px;">⏹ СТОП</button>
             </div>
-
             <div id="userList" style="text-align:left; margin-bottom:15px;"></div>
             <button onclick="closeAdmin()" style="width:100%; padding:10px;">Закрыть</button>
         </div>
@@ -79,13 +80,16 @@
 
     <div class="container">
         <div id="cinema" class="cinema-container">
-            <video id="mainVideo" playsinline></video>
+            <video id="html5-player" class="hidden"></video>
+            <div id="youtube-player-placeholder"></div>
             
+            <div id="clickBlocker" class="blocker-layer"></div>
+
             <div id="adminControls" class="controls-layer hidden">
                 <button id="btnPlay" class="control-btn">▶</button>
                 <button id="btnPause" class="control-btn hidden">⏸</button>
-                <input type="range" id="progressBar" class="progress-bar" min="0" value="0" step="0.1">
-                <span id="timeDisplay" class="time-display">00:00</span>
+                <input type="range" id="progressBar" class="progress-bar" min="0" value="0" step="1">
+                <span id="timeDisplay" class="time-display">00:00 / 00:00</span>
             </div>
         </div>
 
@@ -125,122 +129,190 @@
         let myNick = localStorage.getItem('chat_nick');
         const ADMIN_PASS = "2025";
         let isAdmin = localStorage.getItem('admin_access') === ADMIN_PASS;
+        
+        // Переменные плееров
+        let ytPlayer = null;
+        let html5Player = document.getElementById('html5-player');
+        let currentMode = null; // 'youtube' or 'html5'
+        let duration = 0;
 
-        // --- ЛОГИКА СИНХРОННОГО ПЛЕЕРА ---
-        const video = document.getElementById('mainVideo');
+        // --- ИНИЦИАЛИЗАЦИЯ YOUTUBE API ---
+        window.onYouTubeIframeAPIReady = function() {
+            ytPlayer = new YT.Player('youtube-player-placeholder', {
+                height: '100%', width: '100%',
+                playerVars: { 'controls': 0, 'rel': 0, 'showinfo': 0, 'modestbranding': 1 },
+                events: {
+                    'onReady': onPlayerReady
+                }
+            });
+        };
+
+        function onPlayerReady(event) {
+            // Плеер готов
+        }
+
+        // --- ЛОГИКА СИНХРОНИЗАЦИИ ---
         const cinemaBox = document.getElementById('cinema');
         const adminControls = document.getElementById('adminControls');
+        const blocker = document.getElementById('clickBlocker');
         const btnPlay = document.getElementById('btnPlay');
         const btnPause = document.getElementById('btnPause');
         const progressBar = document.getElementById('progressBar');
         const timeDisplay = document.getElementById('timeDisplay');
 
-        // 1. Слушаем состояние плеера из базы
+        // Слушаем Firebase
         onValue(ref(db, 'cinema/state'), (snap) => {
             const data = snap.val();
+            
+            // Если данных нет - скрываем всё
             if (!data) {
                 cinemaBox.style.display = 'none';
-                video.pause();
-                video.src = "";
+                if(ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+                html5Player.pause();
                 return;
             }
 
-            // Показываем плеер
-            if (cinemaBox.style.display === 'none') {
-                cinemaBox.style.display = 'block';
-                video.src = data.url;
-            }
+            // Показываем контейнер
+            if (cinemaBox.style.display === 'none') cinemaBox.style.display = 'block';
 
-            // Синхронизация времени (если разница > 2 секунд, подгоняем)
-            if (Math.abs(video.currentTime - data.time) > 2) {
-                video.currentTime = data.time;
-            }
-
-            // Статус
-            if (data.status === 'playing') {
-                video.play().catch(e => console.log("Автоплей заблокирован браузером, нужно нажать на страницу"));
+            // Переключение режимов
+            if (data.type === 'youtube') {
+                html5Player.classList.add('hidden');
+                // Если ютуб еще не загрузил видео или это новое видео
+                if (ytPlayer && ytPlayer.cueVideoById) {
+                     // Получаем ID из URL или данных
+                     // Здесь предполагаем, что в data.src лежит ID видео для ютуба
+                     let currentData = ytPlayer.getVideoData();
+                     if (!currentData || currentData.video_id !== data.src) {
+                         ytPlayer.loadVideoById(data.src);
+                     }
+                }
+                currentMode = 'youtube';
             } else {
-                video.pause();
+                // HTML5 Mode
+                if (html5Player.src !== data.src) html5Player.src = data.src;
+                html5Player.classList.remove('hidden');
+                currentMode = 'html5';
             }
 
-            // Обновляем UI админа, если мы админ
+            // Синхронизация состояния (Play/Pause/Time)
+            syncPlayer(data);
+
+            // UI Админа
             if (isAdmin) {
                 adminControls.classList.remove('hidden');
-                updateAdminUI(data.status, data.time);
+                blocker.style.pointerEvents = 'none'; // Админ может кликать
+                updateControlsUI(data.status);
+            } else {
+                adminControls.classList.add('hidden');
+                blocker.style.pointerEvents = 'all'; // Блокируем клики обычным
             }
         });
 
-        // 2. Управление (Только для админа)
-        if (isAdmin) {
-            // Клик Play
-            btnPlay.onclick = () => {
-                set(ref(db, 'cinema/state'), {
-                    status: 'playing',
-                    time: video.currentTime,
-                    url: video.src,
-                    timestamp: Date.now()
-                });
-            };
-
-            // Клик Pause
-            btnPause.onclick = () => {
-                set(ref(db, 'cinema/state'), {
-                    status: 'paused',
-                    time: video.currentTime,
-                    url: video.src,
-                    timestamp: Date.now()
-                });
-            };
-
-            // Перемотка (Seek)
-            progressBar.oninput = () => {
-                set(ref(db, 'cinema/state'), {
-                    status: 'paused', // При перемотке ставим паузу
-                    time: parseFloat(progressBar.value),
-                    url: video.src,
-                    timestamp: Date.now()
-                });
-            };
-        }
-
-        // Обновление прогресс-бара локально при проигрывании
-        video.ontimeupdate = () => {
-            if (isAdmin) {
-                progressBar.max = video.duration;
-                progressBar.value = video.currentTime;
+        function syncPlayer(data) {
+            let currentTime = 0;
+            
+            if (currentMode === 'youtube' && ytPlayer && ytPlayer.seekTo) {
+                currentTime = ytPlayer.getCurrentTime();
+                // Если рассинхрон > 2 сек
+                if (Math.abs(currentTime - data.time) > 2) ytPlayer.seekTo(data.time);
                 
-                // Периодически отправляем точное время в базу, чтобы у всех синхронизировалось
-                // Но делаем это редко, чтобы не спамить базу (например, раз в 5 сек можно добавить логику)
-            }
-            // Форматирование времени 00:00
-            let m = Math.floor(video.currentTime / 60);
-            let s = Math.floor(video.currentTime % 60);
-            timeDisplay.innerText = `${m}:${s < 10 ? '0'+s : s}`;
-        };
-
-        function updateAdminUI(status, time) {
-            if (status === 'playing') {
-                btnPlay.classList.add('hidden');
-                btnPause.classList.remove('hidden');
-            } else {
-                btnPlay.classList.remove('hidden');
-                btnPause.classList.add('hidden');
+                if (data.status === 'playing' && ytPlayer.getPlayerState() !== 1) ytPlayer.playVideo();
+                if (data.status === 'paused' && ytPlayer.getPlayerState() === 1) ytPlayer.pauseVideo();
+                
+            } else if (currentMode === 'html5') {
+                currentTime = html5Player.currentTime;
+                if (Math.abs(currentTime - data.time) > 2) html5Player.currentTime = data.time;
+                
+                if (data.status === 'playing' && html5Player.paused) html5Player.play().catch(()=>{});
+                if (data.status === 'paused' && !html5Player.paused) html5Player.pause();
             }
         }
 
-        // Функции для админ-панели
-        window.loadMovie = () => {
-            const url = document.getElementById('movieUrl').value;
-            if(url) {
-                set(ref(db, 'cinema/state'), {
-                    status: 'paused',
-                    time: 0,
-                    url: url,
-                    timestamp: Date.now()
-                });
+        // --- УПРАВЛЕНИЕ АДМИНА ---
+        function getMyTime() {
+            if (currentMode === 'youtube' && ytPlayer) return ytPlayer.getCurrentTime();
+            if (currentMode === 'html5') return html5Player.currentTime;
+            return 0;
+        }
+        
+        function getMyDuration() {
+            if (currentMode === 'youtube' && ytPlayer) return ytPlayer.getDuration();
+            if (currentMode === 'html5') return html5Player.duration;
+            return 100;
+        }
+
+        function updateFirebase(status, timeOverride = null) {
+            const time = timeOverride !== null ? timeOverride : getMyTime();
+            const src = currentMode === 'youtube' ? ytPlayer.getVideoData().video_id : html5Player.src;
+            
+            set(ref(db, 'cinema/state'), {
+                type: currentMode,
+                src: src, // Для ютуба это ID, для файла URL
+                status: status,
+                time: time,
+                timestamp: Date.now()
+            });
+        }
+
+        if (isAdmin) {
+            btnPlay.onclick = () => updateFirebase('playing');
+            btnPause.onclick = () => updateFirebase('paused');
+            
+            progressBar.oninput = () => {
+                updateFirebase('paused', parseFloat(progressBar.value));
+            };
+
+            // Обновление ползунка админа
+            setInterval(() => {
+                if (currentMode) {
+                    const t = getMyTime();
+                    const d = getMyDuration();
+                    progressBar.max = d;
+                    progressBar.value = t;
+                    timeDisplay.innerText = formatTime(t) + " / " + formatTime(d);
+                }
+            }, 1000);
+        }
+        
+        function formatTime(s) {
+            s = Math.floor(s);
+            let m = Math.floor(s / 60);
+            let sec = s % 60;
+            return `${m}:${sec<10?'0'+sec:sec}`;
+        }
+
+        // --- ЗАПУСК ВИДЕО (ПАРСЕР) ---
+        window.startMedia = () => {
+            const url = document.getElementById('mediaUrl').value.trim();
+            if (!url) return;
+            
+            let type = 'html5';
+            let src = url;
+
+            // Простая проверка на YouTube
+            const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(ytRegExp);
+
+            if (match && match[2].length === 11) {
+                type = 'youtube';
+                src = match[2]; // ID Видео
             }
+
+            set(ref(db, 'cinema/state'), {
+                type: type,
+                src: src,
+                status: 'paused', // Старт на паузе
+                time: 0,
+                timestamp: Date.now()
+            });
+            
+            // Закрыть модалку
+            document.getElementById('adminModal').classList.add('hidden');
         };
-        window.stopMovie = () => remove(ref(db, 'cinema/state'));
+        
+        window.stopMedia = () => remove(ref(db, 'cinema/state'));
+
 
         // --- ОБЫЧНЫЙ ЧАТ ---
         window.joinChat = () => {
@@ -249,22 +321,16 @@
             myNick = nick;
             localStorage.setItem('chat_nick', nick);
             
-            // Фикс "мертвых душ"
             const userRef = ref(db, 'users/' + nick);
             set(userRef, { online: true });
             onDisconnect(userRef).remove();
 
             document.getElementById('loginModal').classList.add('hidden');
-            checkAccess();
-        };
-
-        function checkAccess() {
-            // Если сохранен пароль админа, даем доступ к управлению
             if (localStorage.getItem('admin_access') === ADMIN_PASS) {
                 isAdmin = true;
                 adminControls.classList.remove('hidden');
             }
-        }
+        };
 
         window.sendMsg = () => {
             const i = document.getElementById('msgInput');
@@ -273,7 +339,6 @@
                 i.value = '';
             }
         };
-
         onChildAdded(ref(db, 'messages'), (s) => {
             const m = s.val();
             const d = document.createElement('div');
@@ -283,9 +348,9 @@
             document.getElementById('chatBox').scrollTop = 9999;
         });
 
-        // --- АДМИНКА (СПИСОК) ---
+        window.logout = () => { localStorage.removeItem('chat_nick'); location.reload(); };
         window.openAdmin = () => {
-            if (localStorage.getItem('admin_access') === ADMIN_PASS || prompt("Pass:") === ADMIN_PASS) {
+            if (localStorage.getItem('admin_access') === ADMIN_PASS || prompt("Пароль:") === ADMIN_PASS) {
                 localStorage.setItem('admin_access', ADMIN_PASS);
                 isAdmin = true;
                 document.getElementById('adminModal').classList.remove('hidden');
@@ -295,12 +360,10 @@
         window.closeAdmin = () => document.getElementById('adminModal').classList.add('hidden');
         
         function loadUsers() {
-            onValue(ref(db, 'users'), (snap) => {
+             onValue(ref(db, 'users'), (snap) => {
                 const div = document.getElementById('userList');
                 div.innerHTML = '';
-                snap.forEach(u => {
-                    div.innerHTML += `<div class="user-item"><span>🟢 ${u.key}</span> <button onclick="kick('${u.key}')" style="background:red;border:none;color:white;">Kick</button></div>`;
-                });
+                snap.forEach(u => div.innerHTML += `<div class="user-item"><span>🟢 ${u.key}</span><button onclick="kick('${u.key}')" style="background:red;border:none;color:white;">Kick</button></div>`);
             });
         }
         window.kick = (n) => set(ref(db, `users/${n}/kicked`), true);
@@ -314,7 +377,7 @@
             }
         }
         createSnow();
-        if(myNick) { document.getElementById('loginModal').classList.add('hidden'); checkAccess(); }
+        if(myNick) { document.getElementById('loginModal').classList.add('hidden'); }
     </script>
 </body>
 </html>
