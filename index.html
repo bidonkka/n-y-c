@@ -3,38 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎄 Новогодний Чат 🎄</title>
+    <title>🎄 Новогодний Чат & Кинозал 🎄</title>
     <style>
-        /* Весь CSS остается прежним, я обновляю только логику скриптов ниже */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%); min-height: 100vh; overflow-x: hidden; position: relative; }
+        
+        /* Эффекты фона */
         .snowflake { position: fixed; top: -10px; color: #fff; pointer-events: none; z-index: 1; animation: fall linear infinite; font-size: 20px; }
         @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
         .firework-particle { position: fixed; width: 6px; height: 6px; border-radius: 50%; pointer-events: none; z-index: 9999; animation: explode 1s ease-out forwards; }
         @keyframes explode { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; } }
+
         .container { max-width: 900px; margin: 0 auto; padding: 20px; position: relative; z-index: 10; }
-        .timer-box { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border-radius: 30px; padding: 30px; margin-bottom: 20px; border: 2px solid rgba(255, 255, 255, 0.2); text-align: center; }
+
+        /* Таймер */
+        .timer-box { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border-radius: 30px; padding: 20px; margin-bottom: 20px; border: 2px solid rgba(255, 255, 255, 0.2); text-align: center; }
         .timer { display: flex; justify-content: center; gap: 20px; }
-        .time-unit { background: rgba(255, 255, 255, 0.2); border: 2px solid rgba(250, 204, 21, 0.5); border-radius: 20px; padding: 20px; min-width: 90px; }
-        .time-value { font-size: 48px; font-weight: 800; color: #fcd34d; }
+        .time-value { font-size: 40px; font-weight: 800; color: #fcd34d; }
+
+        /* КИНОЗАЛ */
+        #cinema-screen { 
+            display: none; width: 100%; aspect-ratio: 16/9; background: #000; 
+            border-radius: 20px; overflow: hidden; margin-bottom: 20px; 
+            border: 2px solid #fcd34d; box-shadow: 0 0 20px rgba(252, 211, 77, 0.5);
+        }
+        iframe, video { width: 100%; height: 100%; border: none; }
+
+        /* Чат */
         .chat-container { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border-radius: 30px; border: 2px solid rgba(255, 255, 255, 0.2); overflow: hidden; }
         .chat-header { background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(249, 115, 22, 0.3)); padding: 20px; display: flex; justify-content: space-between; align-items: center; }
         .chat-title-main { color: #ffffff !important; font-weight: 900 !important; font-size: 28px; }
         .messages { height: 400px; overflow-y: auto; padding: 20px; background: rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; }
-        .message { margin-bottom: 15px; display: flex; flex-direction: column; max-width: 75%; position: relative; }
+        
+        .message { margin-bottom: 15px; display: flex; flex-direction: column; max-width: 80%; }
         .message.own { align-self: flex-end; }
         .message.other { align-self: flex-start; }
-        .message-content { padding: 12px 16px; border-radius: 20px; color: white; }
+        .message-content { padding: 10px 15px; border-radius: 15px; color: white; word-wrap: break-word; }
         .message.own .message-content { background: linear-gradient(135deg, #fbbf24, #f97316); }
         .message.other .message-content { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.3); }
+
         .input-area { padding: 20px; display: flex; gap: 10px; }
         input { flex: 1; padding: 15px; border-radius: 15px; border: none; background: rgba(255, 255, 255, 0.2); color: white; outline: none; }
         button.action-btn { padding: 10px 25px; border-radius: 15px; border: none; background: #f59e0b; color: white; font-weight: bold; cursor: pointer; }
+
+        /* Модалки и Админка */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-        .modal-content { background: #1e293b; padding: 25px; border-radius: 30px; width: 95%; max-width: 450px; text-align: center; color: white; }
-        .admin-scroll-area { max-height: 300px; overflow-y: auto; text-align: left; }
+        .modal-content { background: #1e293b; padding: 25px; border-radius: 30px; width: 95%; max-width: 500px; text-align: center; color: white; }
+        .admin-scroll-area { max-height: 250px; overflow-y: auto; text-align: left; margin-bottom: 15px; }
         .user-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 5px; }
         .hidden { display: none !important; }
+        
+        .cinema-controls { display: flex; gap: 5px; margin-top: 10px; }
+        .cinema-input { flex: 1; padding: 8px; border-radius: 8px; border: none; }
     </style>
 </head>
 <body>
@@ -49,15 +69,28 @@
 
     <div id="adminModal" class="modal hidden">
         <div class="modal-content">
-            <h2>⚙️ Админ-панель</h2>
+            <h2>⚙️ Управление</h2>
+            
+            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; margin-bottom: 15px;">
+                <h3 style="margin:0 0 5px 0;">🎥 Кинозал</h3>
+                <div class="cinema-controls">
+                    <input type="text" id="videoUrlInput" class="cinema-input" placeholder="Ссылка на YouTube или MP4...">
+                    <button onclick="setCinema()" style="background:#10b981; border:none; border-radius:8px; padding:0 10px; cursor:pointer;">▶️</button>
+                    <button onclick="stopCinema()" style="background:#ef4444; border:none; border-radius:8px; padding:0 10px; cursor:pointer;">⏹</button>
+                </div>
+            </div>
+
             <div class="admin-scroll-area">
-                <div style="color:#fcd34d; font-size:12px; margin: 10px 0;">АКТИВНЫЕ</div>
+                <div style="color:#fcd34d; font-size:12px; margin: 5px 0;">АКТИВНЫЕ (ONLINE)</div>
                 <div id="activeUserList"></div>
-                <div style="color:#fcd34d; font-size:12px; margin: 10px 0;">БАН / КИК</div>
+                <div style="color:#fcd34d; font-size:12px; margin: 10px 0;">ЗАБАНЕННЫЕ / КИКНУТЫЕ</div>
                 <div id="blockedUserList"></div>
             </div>
-            <button onclick="adminAction('fireworks')" style="background:#8b5cf6; width:48%; padding:10px; border:none; border-radius:10px; color:white; margin-top:10px;">🎇 Салют</button>
-            <button onclick="adminAction('clear')" style="background:#ef4444; width:48%; padding:10px; border:none; border-radius:10px; color:white;">🗑️ Очистить</button>
+
+            <div style="display:flex; gap:10px;">
+                <button onclick="adminAction('fireworks')" style="flex:1; background:#8b5cf6; padding:10px; border:none; border-radius:10px; color:white;">🎇 Салют</button>
+                <button onclick="adminAction('clear')" style="flex:1; background:#ef4444; padding:10px; border:none; border-radius:10px; color:white;">🗑️ Очистить</button>
+            </div>
             <button onclick="closeAdmin()" style="background:#475569; width:100%; padding:10px; border:none; border-radius:10px; color:white; margin-top:10px;">Закрыть</button>
         </div>
     </div>
@@ -71,6 +104,8 @@
                 <div class="time-unit"><div class="time-value" id="s">00</div></div>
             </div>
         </div>
+
+        <div id="cinema-screen"></div>
 
         <div class="chat-container">
             <div class="chat-header">
@@ -90,7 +125,7 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, push, onChildAdded, onChildChanged, remove, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getDatabase, ref, push, onChildAdded, remove, onValue, set, serverTimestamp, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDOhC3fadF5gs73HgD3kkeRFE1YGgixgAA",
@@ -107,46 +142,35 @@
         let myNick = localStorage.getItem('chat_nick');
         const ADMIN_PASS = "2025";
 
-        // --- УЛУЧШЕННЫЕ УВЕДОМЛЕНИЯ ---
+        // --- УВЕДОМЛЕНИЯ ---
         async function enableNotifications() {
-            if ("Notification" in window) {
-                const permission = await Notification.requestPermission();
-                if (permission === "granted") {
-                    console.log("Уведомления разрешены");
-                }
-            }
+            if ("Notification" in window) await Notification.requestPermission();
         }
-
         function triggerNotify(user, text) {
-            // Если вкладка не в фокусе
-            if (document.hidden || !document.hasFocus()) {
-                if ("Notification" in window && Notification.permission === "granted") {
-                    const n = new Notification("🎄 " + user, {
-                        body: text,
-                        icon: "https://cdn-icons-png.flaticon.com/512/3893/3893071.png",
-                        silent: false
-                    });
-                    
-                    // Звук
-                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-                    audio.play().catch(() => {});
-
-                    // Вибрация для телефонов
-                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-                    
-                    n.onclick = () => { window.focus(); n.close(); };
-                }
+            if (document.hidden && Notification.permission === "granted") {
+                new Notification("🎄 " + user, { body: text, icon: "https://cdn-icons-png.flaticon.com/512/3893/3893071.png" });
+                new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(()=>{});
+                if (navigator.vibrate) navigator.vibrate([100]);
             }
         }
 
-        // --- ВХОД / СТАТУС ---
+        // --- ВХОД И ПРОВЕРКА ОНЛАЙНА ---
         window.joinChat = () => {
             const nick = document.getElementById('nickInput').value.trim();
             if (!nick) return;
-            enableNotifications(); // Запрос при клике
+            enableNotifications();
             myNick = nick;
             localStorage.setItem('chat_nick', nick);
-            set(ref(db, 'users/' + nick), { lastSeen: serverTimestamp(), kicked: false });
+
+            // Ссылка на моего пользователя
+            const userRef = ref(db, 'users/' + nick);
+            
+            // 1. Устанавливаем статус
+            set(userRef, { lastSeen: serverTimestamp(), kicked: false });
+            
+            // 2. ВАЖНО: Удаляем пользователя из базы при разрыве соединения
+            onDisconnect(userRef).remove(); 
+
             document.getElementById('loginModal').classList.add('hidden');
             checkStatus();
         };
@@ -155,32 +179,63 @@
             if (!myNick) return;
             onValue(ref(db, 'banned/' + myNick), (snap) => {
                 if (snap.exists() && Date.now() < snap.val()) {
-                    alert("Вы заблокированы!");
-                    logout();
+                    alert("ВЫ ЗАБАНЕНЫ! 🚫"); logout();
                 }
             });
             onValue(ref(db, 'users/' + myNick + '/kicked'), (snap) => {
                 if (snap.val() === true) {
-                    set(ref(db, 'users/' + myNick + '/kicked'), false);
-                    logout();
+                    set(ref(db, 'users/' + myNick + '/kicked'), false); logout();
                 }
             });
         }
-
         window.logout = () => { localStorage.removeItem('chat_nick'); location.reload(); };
 
-        // --- СООБЩЕНИЯ ---
+        // --- КИНОЗАЛ ---
+        window.setCinema = () => {
+            const url = document.getElementById('videoUrlInput').value.trim();
+            if(url) set(ref(db, 'cinema/current'), url);
+        };
+        window.stopCinema = () => remove(ref(db, 'cinema/current'));
+
+        // Слушаем изменения видео у всех
+        onValue(ref(db, 'cinema/current'), (snap) => {
+            const screen = document.getElementById('cinema-screen');
+            const url = snap.val();
+
+            if (!url) {
+                screen.style.display = 'none';
+                screen.innerHTML = '';
+            } else {
+                screen.style.display = 'block';
+                let embedCode = '';
+
+                // Логика YouTube
+                if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                    let videoId = '';
+                    if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
+                    else if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1];
+                    
+                    embedCode = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+                } 
+                // Логика обычных файлов (mp4)
+                else {
+                    embedCode = `<video controls autoplay src="${url}"></video>`;
+                }
+                screen.innerHTML = embedCode;
+            }
+        });
+
+        // --- ЧАТ ---
         window.sendMsg = () => {
             const inp = document.getElementById('msgInput');
             if (inp.value.trim() && myNick) {
-                push(ref(db, 'messages'), { user: myNick, text: inp.value.trim(), time: serverTimestamp() });
+                push(ref(db, 'messages'), { user: myNick, text: inp.value.trim() });
                 inp.value = "";
             }
         };
-
         document.getElementById('msgInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') sendMsg(); });
 
-        let isInitialLoad = true;
+        let initLoad = true;
         onChildAdded(ref(db, 'messages'), (snap) => {
             const m = snap.val();
             const div = document.createElement('div');
@@ -188,51 +243,48 @@
             div.innerHTML = `<div style="font-size:10px; color:#ddd; margin-bottom:2px;">${m.user}</div><div class="message-content">${m.text}</div>`;
             document.getElementById('chatBox').appendChild(div);
             document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
-            
-            // Уведомление присылаем только если это не старое сообщение при загрузке страницы
-            if (!isInitialLoad && m.user !== myNick) {
-                triggerNotify(m.user, m.text);
-            }
+            if (!initLoad && m.user !== myNick) triggerNotify(m.user, m.text);
         });
-        
-        // Отключаем флаг начальной загрузки через секунду
-        setTimeout(() => { isInitialLoad = false; }, 2000);
+        setTimeout(() => initLoad = false, 2000);
 
         // --- АДМИНКА ---
         window.openAdmin = () => {
-            let saved = localStorage.getItem('admin_access');
-            if (saved === ADMIN_PASS || prompt("Пароль:") === ADMIN_PASS) {
+            if (localStorage.getItem('admin_access') === ADMIN_PASS || prompt("Пароль:") === ADMIN_PASS) {
                 localStorage.setItem('admin_access', ADMIN_PASS);
                 document.getElementById('adminModal').classList.remove('hidden');
-                updateAdminLists();
+                updateLists();
             }
         };
 
-        function updateAdminLists() {
+        function updateLists() {
             onValue(ref(db, '/'), (snap) => {
-                const data = snap.val() || {};
-                const users = data.users || {};
-                const banned = data.banned || {};
-                const activeDiv = document.getElementById('activeUserList');
-                const blockedDiv = document.getElementById('blockedUserList');
-                activeDiv.innerHTML = ""; blockedDiv.innerHTML = "";
+                const d = snap.val() || {};
+                const users = d.users || {};
+                const banned = d.banned || {};
+                
+                const act = document.getElementById('activeUserList');
+                const blk = document.getElementById('blockedUserList');
+                act.innerHTML = ""; blk.innerHTML = "";
 
+                // Сначала обрабатываем бан-лист (даже если юзер офлайн)
+                Object.keys(banned).forEach(name => {
+                     if (Date.now() < banned[name]) {
+                        blk.innerHTML += `<div class="user-item"><span>🔴 ${name}</span><button onclick="unban('${name}')" style="background:#10b981;border:none;color:white;padding:4px;">Разбан</button></div>`;
+                     }
+                });
+
+                // Обрабатываем активных (благодаря onDisconnect тут будут только те, кто онлайн)
                 Object.keys(users).forEach(name => {
-                    const isBanned = banned[name] && Date.now() < banned[name];
-                    const isKicked = users[name].kicked === true;
-                    const item = document.createElement('div');
-                    item.className = 'user-item';
+                    // Если пользователь в бане, мы его уже показали в blockedUserList, не дублируем
+                    if (banned[name] && Date.now() < banned[name]) return;
                     
-                    if (isBanned || isKicked) {
-                        item.innerHTML = `<span>🔴 ${name}</span><button onclick="unban('${name}')" style="background:#10b981; border:none; color:white; padding:4px 8px; border-radius:5px;">Вернуть</button>`;
-                        blockedDiv.appendChild(item);
-                    } else {
-                        item.innerHTML = `<span>🟢 ${name}</span><div>
-                            <button onclick="kick('${name}')" style="background:orange; border:none; color:white; padding:4px 8px; border-radius:5px;">Kick</button>
-                            <button onclick="banPrompt('${name}')" style="background:red; border:none; color:white; padding:4px 8px; border-radius:5px; margin-left:5px;">Ban</button>
-                        </div>`;
-                        activeDiv.appendChild(item);
-                    }
+                    act.innerHTML += `<div class="user-item">
+                        <span>🟢 ${name}</span>
+                        <div>
+                            <button onclick="kick('${name}')" style="background:orange;border:none;color:white;padding:4px;">K</button>
+                            <button onclick="banPrompt('${name}')" style="background:red;border:none;color:white;padding:4px;">B</button>
+                        </div>
+                    </div>`;
                 });
             });
         }
@@ -240,7 +292,7 @@
         window.kick = (n) => set(ref(db, `users/${n}/kicked`), true);
         window.unban = (n) => { set(ref(db, `users/${n}/kicked`), false); remove(ref(db, `banned/${n}`)); };
         window.banPrompt = (n) => {
-            const m = prompt("Минут бана:", "10");
+            const m = prompt("Минут:", "10");
             if (m) { set(ref(db, 'banned/' + n), Date.now() + (parseInt(m) * 60000)); kick(n); }
         };
         window.closeAdmin = () => document.getElementById('adminModal').classList.add('hidden');
@@ -249,9 +301,8 @@
             if (a === 'fireworks') set(ref(db, 'signal/fire'), Date.now());
         };
 
-        // --- САЛЮТ / СНЕГ / ТАЙМЕР ---
-        let sigInit = true;
-        onValue(ref(db, 'signal/fire'), () => { if(!sigInit) fire(); sigInit = false; });
+        // --- ЭФФЕКТЫ ---
+        onValue(ref(db, 'signal/fire'), (s) => { if(s.val() && !initLoad) fire(); });
         function fire() {
             const x = Math.random()*window.innerWidth, y = Math.random()*window.innerHeight;
             for(let i=0; i<30; i++) {
