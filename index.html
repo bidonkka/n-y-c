@@ -454,38 +454,73 @@
             }
 
             if (!playerReady) {
-                console.log('Player not ready yet...');
+                console.log('Player not ready yet, waiting...');
+                // Ждём пока плеер загрузится
+                setTimeout(() => {
+                    if (playerReady) loadAndSyncVideo();
+                }, 1000);
                 return;
             }
 
-            // Загружаем видео если нужно
-            if (player.getVideoData().video_id !== currentState.videoId) {
-                player.loadVideoById(currentState.videoId);
-            }
-
-            // Синхронизируем состояние
-            syncPlayer();
+            loadAndSyncVideo();
         });
 
+        function loadAndSyncVideo() {
+            if (!currentState || !playerReady) return;
+            
+            // Проверяем нужно ли загрузить новое видео
+            const currentVideoId = player.getVideoData ? player.getVideoData().video_id : null;
+            
+            if (currentVideoId !== currentState.videoId) {
+                console.log('Loading video:', currentState.videoId);
+                // Загружаем и сразу ставим на паузу на нужное время
+                player.cueVideoById({
+                    videoId: currentState.videoId,
+                    startSeconds: currentState.time || 0
+                });
+                
+                // Через секунду синхронизируем состояние
+                setTimeout(() => {
+                    syncPlayer();
+                }, 1500);
+            } else {
+                // Видео уже загружено, просто синхронизируем
+                syncPlayer();
+            }
+        }
+
         function syncPlayer() {
-            if (!currentState || !playerReady || isAdmin) return;
+            if (!currentState || !playerReady) return;
+            
+            // Админ не синхронизируется, он управляет
+            if (isAdmin) return;
 
             isSyncing = true;
             
-            const targetTime = currentState.time || 0;
-            const currentTime = player.getCurrentTime();
-            const timeDiff = Math.abs(currentTime - targetTime);
+            try {
+                const targetTime = currentState.time || 0;
+                const currentTime = player.getCurrentTime() || 0;
+                const timeDiff = Math.abs(currentTime - targetTime);
 
-            // Если разница больше 2 секунд - перематываем
-            if (timeDiff > 2) {
-                player.seekTo(targetTime, true);
-            }
+                console.log('Syncing... Current:', currentTime, 'Target:', targetTime, 'Diff:', timeDiff);
 
-            // Синхронизируем play/pause
-            if (currentState.status === 'playing' && player.getPlayerState() !== YT.PlayerState.PLAYING) {
-                player.playVideo();
-            } else if (currentState.status === 'paused' && player.getPlayerState() === YT.PlayerState.PLAYING) {
-                player.pauseVideo();
+                // Если разница больше 2 секунд - перематываем
+                if (timeDiff > 2) {
+                    console.log('Big time diff, seeking to:', targetTime);
+                    player.seekTo(targetTime, true);
+                }
+
+                // Синхронизируем play/pause
+                const playerState = player.getPlayerState();
+                if (currentState.status === 'playing' && playerState !== YT.PlayerState.PLAYING) {
+                    console.log('Playing video...');
+                    player.playVideo();
+                } else if (currentState.status === 'paused' && playerState === YT.PlayerState.PLAYING) {
+                    console.log('Pausing video...');
+                    player.pauseVideo();
+                }
+            } catch (e) {
+                console.error('Sync error:', e);
             }
 
             setTimeout(() => { isSyncing = false; }, 500);
