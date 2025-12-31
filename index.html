@@ -3,122 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎄 Новогодний Чат & Кинозал 🎄</title>
+    <title>🎄 Новогодний чат 🎄</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%); min-height: 100vh; overflow-x: hidden; position: relative; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%); min-height: 100vh; overflow-x: hidden; color: white; }
         
-        /* Эффекты фона */
+        /* Снег и частицы */
         .snowflake { position: fixed; top: -10px; color: #fff; pointer-events: none; z-index: 1; animation: fall linear infinite; font-size: 20px; }
         @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
-        .firework-particle { position: fixed; width: 6px; height: 6px; border-radius: 50%; pointer-events: none; z-index: 9999; animation: explode 1s ease-out forwards; }
-        @keyframes explode { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; } }
 
         .container { max-width: 900px; margin: 0 auto; padding: 20px; position: relative; z-index: 10; }
 
-        /* Таймер */
-        .timer-box { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border-radius: 30px; padding: 20px; margin-bottom: 20px; border: 2px solid rgba(255, 255, 255, 0.2); text-align: center; }
-        .timer { display: flex; justify-content: center; gap: 20px; }
-        .time-value { font-size: 40px; font-weight: 800; color: #fcd34d; }
-
-        /* КИНОЗАЛ */
-        #cinema-screen { 
-            display: none; width: 100%; aspect-ratio: 16/9; background: #000; 
-            border-radius: 20px; overflow: hidden; margin-bottom: 20px; 
-            border: 2px solid #fcd34d; box-shadow: 0 0 20px rgba(252, 211, 77, 0.5);
+        /* --- СИНХРОННЫЙ ПЛЕЕР --- */
+        .cinema-container {
+            background: #000; border: 2px solid #fcd34d; border-radius: 20px;
+            overflow: hidden; margin-bottom: 20px; position: relative;
+            box-shadow: 0 0 30px rgba(252, 211, 77, 0.3); display: none; /* Скрыт пока нет видео */
         }
-        iframe, video { width: 100%; height: 100%; border: none; }
+        
+        video { width: 100%; display: block; }
+
+        /* Панель управления (видна только админу через JS) */
+        .controls-layer {
+            background: rgba(0, 0, 0, 0.7); padding: 10px; display: flex; align-items: center; gap: 10px;
+        }
+        .control-btn { background: none; border: none; color: #fcd34d; font-size: 20px; cursor: pointer; padding: 5px 10px; }
+        .progress-bar { flex: 1; -webkit-appearance: none; height: 5px; background: #444; border-radius: 5px; outline: none; }
+        .progress-bar::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; background: #fcd34d; border-radius: 50%; cursor: pointer; }
+        .time-display { font-size: 12px; font-family: monospace; min-width: 80px; text-align: center; }
 
         /* Чат */
-        .chat-container { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border-radius: 30px; border: 2px solid rgba(255, 255, 255, 0.2); overflow: hidden; }
-        .chat-header { background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(249, 115, 22, 0.3)); padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .chat-title-main { color: #ffffff !important; font-weight: 900 !important; font-size: 28px; }
-        .messages { height: 400px; overflow-y: auto; padding: 20px; background: rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; }
+        .chat-container { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border-radius: 30px; border: 2px solid rgba(255, 255, 255, 0.2); overflow: hidden; height: 500px; display: flex; flex-direction: column; }
+        .chat-header { padding: 15px; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; }
+        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; }
+        .message { margin-bottom: 10px; max-width: 80%; padding: 8px 12px; border-radius: 15px; font-size: 14px; }
+        .message.own { align-self: flex-end; background: linear-gradient(135deg, #fbbf24, #f97316); }
+        .message.other { align-self: flex-start; background: rgba(255,255,255,0.2); }
         
-        .message { margin-bottom: 15px; display: flex; flex-direction: column; max-width: 80%; }
-        .message.own { align-self: flex-end; }
-        .message.other { align-self: flex-start; }
-        .message-content { padding: 10px 15px; border-radius: 15px; color: white; word-wrap: break-word; }
-        .message.own .message-content { background: linear-gradient(135deg, #fbbf24, #f97316); }
-        .message.other .message-content { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.3); }
-
-        .input-area { padding: 20px; display: flex; gap: 10px; }
-        input { flex: 1; padding: 15px; border-radius: 15px; border: none; background: rgba(255, 255, 255, 0.2); color: white; outline: none; }
-        button.action-btn { padding: 10px 25px; border-radius: 15px; border: none; background: #f59e0b; color: white; font-weight: bold; cursor: pointer; }
-
-        /* Модалки и Админка */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 2000; }
-        .modal-content { background: #1e293b; padding: 25px; border-radius: 30px; width: 95%; max-width: 500px; text-align: center; color: white; }
-        .admin-scroll-area { max-height: 250px; overflow-y: auto; text-align: left; margin-bottom: 15px; }
-        .user-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-bottom: 5px; }
+        .input-area { padding: 15px; display: flex; gap: 10px; background: rgba(0,0,0,0.2); }
+        input { flex: 1; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.2); color: white; outline: none; }
+        
+        /* Модалки */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+        .modal-content { background: #1e293b; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #555; }
         .hidden { display: none !important; }
-        
-        .cinema-controls { display: flex; gap: 5px; margin-top: 10px; }
-        .cinema-input { flex: 1; padding: 8px; border-radius: 8px; border: none; }
+        .admin-panel { max-height: 80vh; overflow-y: auto; }
+        .user-item { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px solid #333; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
     <div id="loginModal" class="modal">
         <div class="modal-content">
-            <h1 style="color:#fcd34d">🎄 НОВОГОДНИЙ ЧАТ</h1>
-            <input type="text" id="nickInput" placeholder="Ваш ник..." maxlength="15" style="width: 100%; padding: 15px; border-radius: 15px; margin-top: 20px; border: none;">
-            <button onclick="joinChat()" class="action-btn" style="width: 100%; margin-top: 15px;">ВОЙТИ 🎉</button>
+            <h2 style="color:#fcd34d">🎄 ВХОД В ЧАТ</h2>
+            <input type="text" id="nickInput" placeholder="Никнейм..." style="width:100%; margin:20px 0; padding:10px;">
+            <button onclick="joinChat()" style="width:100%; padding:10px; background:#f59e0b; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">ВОЙТИ</button>
         </div>
     </div>
 
     <div id="adminModal" class="modal hidden">
-        <div class="modal-content">
-            <h2>⚙️ Управление</h2>
+        <div class="modal-content admin-panel">
+            <h3>⚙️ Пульт управления</h3>
             
-            <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; margin-bottom: 15px;">
-                <h3 style="margin:0 0 5px 0;">🎥 Кинозал</h3>
-                <div class="cinema-controls">
-                    <input type="text" id="videoUrlInput" class="cinema-input" placeholder="Ссылка на YouTube или MP4...">
-                    <button onclick="setCinema()" style="background:#10b981; border:none; border-radius:8px; padding:0 10px; cursor:pointer;">▶️</button>
-                    <button onclick="stopCinema()" style="background:#ef4444; border:none; border-radius:8px; padding:0 10px; cursor:pointer;">⏹</button>
-                </div>
+            <div style="background:#333; padding:10px; border-radius:10px; margin:15px 0;">
+                <p style="margin-bottom:5px;">🎬 <b>Запустить фильм (.mp4)</b></p>
+                <input type="text" id="movieUrl" placeholder="Ссылка на .mp4 файл" style="width:100%; margin-bottom:10px;">
+                <button onclick="loadMovie()" style="background:#10b981; border:none; padding:8px 20px; color:white; border-radius:5px; cursor:pointer;">▶️ ЗАПУСТИТЬ ПЛЕЕР</button>
+                <button onclick="stopMovie()" style="background:#ef4444; border:none; padding:8px 20px; color:white; border-radius:5px; cursor:pointer; margin-top:5px;">⏹ УБРАТЬ ЭКРАН</button>
             </div>
 
-            <div class="admin-scroll-area">
-                <div style="color:#fcd34d; font-size:12px; margin: 5px 0;">АКТИВНЫЕ (ONLINE)</div>
-                <div id="activeUserList"></div>
-                <div style="color:#fcd34d; font-size:12px; margin: 10px 0;">ЗАБАНЕННЫЕ / КИКНУТЫЕ</div>
-                <div id="blockedUserList"></div>
-            </div>
-
-            <div style="display:flex; gap:10px;">
-                <button onclick="adminAction('fireworks')" style="flex:1; background:#8b5cf6; padding:10px; border:none; border-radius:10px; color:white;">🎇 Салют</button>
-                <button onclick="adminAction('clear')" style="flex:1; background:#ef4444; padding:10px; border:none; border-radius:10px; color:white;">🗑️ Очистить</button>
-            </div>
-            <button onclick="closeAdmin()" style="background:#475569; width:100%; padding:10px; border:none; border-radius:10px; color:white; margin-top:10px;">Закрыть</button>
+            <div id="userList" style="text-align:left; margin-bottom:15px;"></div>
+            <button onclick="closeAdmin()" style="width:100%; padding:10px;">Закрыть</button>
         </div>
     </div>
 
     <div class="container">
-        <div class="timer-box">
-            <div id="timerTitle" style="color:white; margin-bottom:10px;">⏰ ДО НОВОГО ГОДА:</div>
-            <div class="timer">
-                <div class="time-unit"><div class="time-value" id="h">00</div></div>
-                <div class="time-unit"><div class="time-value" id="m">00</div></div>
-                <div class="time-unit"><div class="time-value" id="s">00</div></div>
+        <div id="cinema" class="cinema-container">
+            <video id="mainVideo" playsinline></video>
+            
+            <div id="adminControls" class="controls-layer hidden">
+                <button id="btnPlay" class="control-btn">▶</button>
+                <button id="btnPause" class="control-btn hidden">⏸</button>
+                <input type="range" id="progressBar" class="progress-bar" min="0" value="0" step="0.1">
+                <span id="timeDisplay" class="time-display">00:00</span>
             </div>
         </div>
 
-        <div id="cinema-screen"></div>
-
         <div class="chat-container">
             <div class="chat-header">
-                <h3 class="chat-title-main">Новогодний Чат</h3>
+                <h3>Новогодний Чат</h3>
                 <div>
-                    <button style="background:none; border:none; font-size:24px; cursor:pointer;" onclick="logout()">🚪</button>
-                    <button style="background:none; border:none; font-size:24px; cursor:pointer;" onclick="openAdmin()">⚙️</button>
+                    <button onclick="logout()" style="background:none; border:none; font-size:20px; cursor:pointer;">🚪</button>
+                    <button onclick="openAdmin()" style="background:none; border:none; font-size:20px; cursor:pointer;">⚙️</button>
                 </div>
             </div>
             <div class="messages" id="chatBox"></div>
             <div class="input-area">
                 <input type="text" id="msgInput" placeholder="Сообщение...">
-                <button class="action-btn" onclick="sendMsg()">📨</button>
+                <button onclick="sendMsg()" style="padding:10px 20px; border:none; background:#fcd34d; border-radius:10px; cursor:pointer;">📨</button>
             </div>
         </div>
     </div>
@@ -139,197 +121,200 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        
         let myNick = localStorage.getItem('chat_nick');
         const ADMIN_PASS = "2025";
+        let isAdmin = localStorage.getItem('admin_access') === ADMIN_PASS;
 
-        // --- УВЕДОМЛЕНИЯ ---
-        async function enableNotifications() {
-            if ("Notification" in window) await Notification.requestPermission();
+        // --- ЛОГИКА СИНХРОННОГО ПЛЕЕРА ---
+        const video = document.getElementById('mainVideo');
+        const cinemaBox = document.getElementById('cinema');
+        const adminControls = document.getElementById('adminControls');
+        const btnPlay = document.getElementById('btnPlay');
+        const btnPause = document.getElementById('btnPause');
+        const progressBar = document.getElementById('progressBar');
+        const timeDisplay = document.getElementById('timeDisplay');
+
+        // 1. Слушаем состояние плеера из базы
+        onValue(ref(db, 'cinema/state'), (snap) => {
+            const data = snap.val();
+            if (!data) {
+                cinemaBox.style.display = 'none';
+                video.pause();
+                video.src = "";
+                return;
+            }
+
+            // Показываем плеер
+            if (cinemaBox.style.display === 'none') {
+                cinemaBox.style.display = 'block';
+                video.src = data.url;
+            }
+
+            // Синхронизация времени (если разница > 2 секунд, подгоняем)
+            if (Math.abs(video.currentTime - data.time) > 2) {
+                video.currentTime = data.time;
+            }
+
+            // Статус
+            if (data.status === 'playing') {
+                video.play().catch(e => console.log("Автоплей заблокирован браузером, нужно нажать на страницу"));
+            } else {
+                video.pause();
+            }
+
+            // Обновляем UI админа, если мы админ
+            if (isAdmin) {
+                adminControls.classList.remove('hidden');
+                updateAdminUI(data.status, data.time);
+            }
+        });
+
+        // 2. Управление (Только для админа)
+        if (isAdmin) {
+            // Клик Play
+            btnPlay.onclick = () => {
+                set(ref(db, 'cinema/state'), {
+                    status: 'playing',
+                    time: video.currentTime,
+                    url: video.src,
+                    timestamp: Date.now()
+                });
+            };
+
+            // Клик Pause
+            btnPause.onclick = () => {
+                set(ref(db, 'cinema/state'), {
+                    status: 'paused',
+                    time: video.currentTime,
+                    url: video.src,
+                    timestamp: Date.now()
+                });
+            };
+
+            // Перемотка (Seek)
+            progressBar.oninput = () => {
+                set(ref(db, 'cinema/state'), {
+                    status: 'paused', // При перемотке ставим паузу
+                    time: parseFloat(progressBar.value),
+                    url: video.src,
+                    timestamp: Date.now()
+                });
+            };
         }
-        function triggerNotify(user, text) {
-            if (document.hidden && Notification.permission === "granted") {
-                new Notification("🎄 " + user, { body: text, icon: "https://cdn-icons-png.flaticon.com/512/3893/3893071.png" });
-                new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play().catch(()=>{});
-                if (navigator.vibrate) navigator.vibrate([100]);
+
+        // Обновление прогресс-бара локально при проигрывании
+        video.ontimeupdate = () => {
+            if (isAdmin) {
+                progressBar.max = video.duration;
+                progressBar.value = video.currentTime;
+                
+                // Периодически отправляем точное время в базу, чтобы у всех синхронизировалось
+                // Но делаем это редко, чтобы не спамить базу (например, раз в 5 сек можно добавить логику)
+            }
+            // Форматирование времени 00:00
+            let m = Math.floor(video.currentTime / 60);
+            let s = Math.floor(video.currentTime % 60);
+            timeDisplay.innerText = `${m}:${s < 10 ? '0'+s : s}`;
+        };
+
+        function updateAdminUI(status, time) {
+            if (status === 'playing') {
+                btnPlay.classList.add('hidden');
+                btnPause.classList.remove('hidden');
+            } else {
+                btnPlay.classList.remove('hidden');
+                btnPause.classList.add('hidden');
             }
         }
 
-        // --- ВХОД И ПРОВЕРКА ОНЛАЙНА ---
+        // Функции для админ-панели
+        window.loadMovie = () => {
+            const url = document.getElementById('movieUrl').value;
+            if(url) {
+                set(ref(db, 'cinema/state'), {
+                    status: 'paused',
+                    time: 0,
+                    url: url,
+                    timestamp: Date.now()
+                });
+            }
+        };
+        window.stopMovie = () => remove(ref(db, 'cinema/state'));
+
+        // --- ОБЫЧНЫЙ ЧАТ ---
         window.joinChat = () => {
             const nick = document.getElementById('nickInput').value.trim();
             if (!nick) return;
-            enableNotifications();
             myNick = nick;
             localStorage.setItem('chat_nick', nick);
-
-            // Ссылка на моего пользователя
+            
+            // Фикс "мертвых душ"
             const userRef = ref(db, 'users/' + nick);
-            
-            // 1. Устанавливаем статус
-            set(userRef, { lastSeen: serverTimestamp(), kicked: false });
-            
-            // 2. ВАЖНО: Удаляем пользователя из базы при разрыве соединения
-            onDisconnect(userRef).remove(); 
+            set(userRef, { online: true });
+            onDisconnect(userRef).remove();
 
             document.getElementById('loginModal').classList.add('hidden');
-            checkStatus();
+            checkAccess();
         };
 
-        function checkStatus() {
-            if (!myNick) return;
-            onValue(ref(db, 'banned/' + myNick), (snap) => {
-                if (snap.exists() && Date.now() < snap.val()) {
-                    alert("ВЫ ЗАБАНЕНЫ! 🚫"); logout();
-                }
-            });
-            onValue(ref(db, 'users/' + myNick + '/kicked'), (snap) => {
-                if (snap.val() === true) {
-                    set(ref(db, 'users/' + myNick + '/kicked'), false); logout();
-                }
-            });
-        }
-        window.logout = () => { localStorage.removeItem('chat_nick'); location.reload(); };
-
-        // --- КИНОЗАЛ ---
-        window.setCinema = () => {
-            const url = document.getElementById('videoUrlInput').value.trim();
-            if(url) set(ref(db, 'cinema/current'), url);
-        };
-        window.stopCinema = () => remove(ref(db, 'cinema/current'));
-
-        // Слушаем изменения видео у всех
-        onValue(ref(db, 'cinema/current'), (snap) => {
-            const screen = document.getElementById('cinema-screen');
-            const url = snap.val();
-
-            if (!url) {
-                screen.style.display = 'none';
-                screen.innerHTML = '';
-            } else {
-                screen.style.display = 'block';
-                let embedCode = '';
-
-                // Логика YouTube
-                if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                    let videoId = '';
-                    if (url.includes('v=')) videoId = url.split('v=')[1].split('&')[0];
-                    else if (url.includes('youtu.be/')) videoId = url.split('youtu.be/')[1];
-                    
-                    embedCode = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-                } 
-                // Логика обычных файлов (mp4)
-                else {
-                    embedCode = `<video controls autoplay src="${url}"></video>`;
-                }
-                screen.innerHTML = embedCode;
+        function checkAccess() {
+            // Если сохранен пароль админа, даем доступ к управлению
+            if (localStorage.getItem('admin_access') === ADMIN_PASS) {
+                isAdmin = true;
+                adminControls.classList.remove('hidden');
             }
-        });
+        }
 
-        // --- ЧАТ ---
         window.sendMsg = () => {
-            const inp = document.getElementById('msgInput');
-            if (inp.value.trim() && myNick) {
-                push(ref(db, 'messages'), { user: myNick, text: inp.value.trim() });
-                inp.value = "";
+            const i = document.getElementById('msgInput');
+            if(i.value.trim()) {
+                push(ref(db, 'messages'), { user: myNick, text: i.value.trim() });
+                i.value = '';
             }
         };
-        document.getElementById('msgInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') sendMsg(); });
 
-        let initLoad = true;
-        onChildAdded(ref(db, 'messages'), (snap) => {
-            const m = snap.val();
-            const div = document.createElement('div');
-            div.className = `message ${m.user === myNick ? 'own' : 'other'}`;
-            div.innerHTML = `<div style="font-size:10px; color:#ddd; margin-bottom:2px;">${m.user}</div><div class="message-content">${m.text}</div>`;
-            document.getElementById('chatBox').appendChild(div);
-            document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
-            if (!initLoad && m.user !== myNick) triggerNotify(m.user, m.text);
+        onChildAdded(ref(db, 'messages'), (s) => {
+            const m = s.val();
+            const d = document.createElement('div');
+            d.className = `message ${m.user === myNick ? 'own' : 'other'}`;
+            d.innerText = `${m.user}: ${m.text}`;
+            document.getElementById('chatBox').appendChild(d);
+            document.getElementById('chatBox').scrollTop = 9999;
         });
-        setTimeout(() => initLoad = false, 2000);
 
-        // --- АДМИНКА ---
+        // --- АДМИНКА (СПИСОК) ---
         window.openAdmin = () => {
-            if (localStorage.getItem('admin_access') === ADMIN_PASS || prompt("Пароль:") === ADMIN_PASS) {
+            if (localStorage.getItem('admin_access') === ADMIN_PASS || prompt("Pass:") === ADMIN_PASS) {
                 localStorage.setItem('admin_access', ADMIN_PASS);
+                isAdmin = true;
                 document.getElementById('adminModal').classList.remove('hidden');
-                updateLists();
+                loadUsers();
             }
-        };
-
-        function updateLists() {
-            onValue(ref(db, '/'), (snap) => {
-                const d = snap.val() || {};
-                const users = d.users || {};
-                const banned = d.banned || {};
-                
-                const act = document.getElementById('activeUserList');
-                const blk = document.getElementById('blockedUserList');
-                act.innerHTML = ""; blk.innerHTML = "";
-
-                // Сначала обрабатываем бан-лист (даже если юзер офлайн)
-                Object.keys(banned).forEach(name => {
-                     if (Date.now() < banned[name]) {
-                        blk.innerHTML += `<div class="user-item"><span>🔴 ${name}</span><button onclick="unban('${name}')" style="background:#10b981;border:none;color:white;padding:4px;">Разбан</button></div>`;
-                     }
-                });
-
-                // Обрабатываем активных (благодаря onDisconnect тут будут только те, кто онлайн)
-                Object.keys(users).forEach(name => {
-                    // Если пользователь в бане, мы его уже показали в blockedUserList, не дублируем
-                    if (banned[name] && Date.now() < banned[name]) return;
-                    
-                    act.innerHTML += `<div class="user-item">
-                        <span>🟢 ${name}</span>
-                        <div>
-                            <button onclick="kick('${name}')" style="background:orange;border:none;color:white;padding:4px;">K</button>
-                            <button onclick="banPrompt('${name}')" style="background:red;border:none;color:white;padding:4px;">B</button>
-                        </div>
-                    </div>`;
-                });
-            });
-        }
-
-        window.kick = (n) => set(ref(db, `users/${n}/kicked`), true);
-        window.unban = (n) => { set(ref(db, `users/${n}/kicked`), false); remove(ref(db, `banned/${n}`)); };
-        window.banPrompt = (n) => {
-            const m = prompt("Минут:", "10");
-            if (m) { set(ref(db, 'banned/' + n), Date.now() + (parseInt(m) * 60000)); kick(n); }
         };
         window.closeAdmin = () => document.getElementById('adminModal').classList.add('hidden');
-        window.adminAction = (a) => {
-            if (a === 'clear') remove(ref(db, 'messages'));
-            if (a === 'fireworks') set(ref(db, 'signal/fire'), Date.now());
-        };
-
-        // --- ЭФФЕКТЫ ---
-        onValue(ref(db, 'signal/fire'), (s) => { if(s.val() && !initLoad) fire(); });
-        function fire() {
-            const x = Math.random()*window.innerWidth, y = Math.random()*window.innerHeight;
-            for(let i=0; i<30; i++) {
-                const p = document.createElement('div'); p.className='firework-particle';
-                p.style.left=x+'px'; p.style.top=y+'px'; p.style.backgroundColor=`hsl(${Math.random()*360},100%,50%)`;
-                const a = Math.random()*Math.PI*2, d = Math.random()*150+50;
-                p.style.setProperty('--dx', Math.cos(a)*d+'px'); p.style.setProperty('--dy', Math.sin(a)*d+'px');
-                document.body.appendChild(p); setTimeout(()=>p.remove(), 1000);
-            }
+        
+        function loadUsers() {
+            onValue(ref(db, 'users'), (snap) => {
+                const div = document.getElementById('userList');
+                div.innerHTML = '';
+                snap.forEach(u => {
+                    div.innerHTML += `<div class="user-item"><span>🟢 ${u.key}</span> <button onclick="kick('${u.key}')" style="background:red;border:none;color:white;">Kick</button></div>`;
+                });
+            });
         }
+        window.kick = (n) => set(ref(db, `users/${n}/kicked`), true);
+
+        // Снег
         function createSnow() {
-            for(let i=0; i<40; i++){
+            for(let i=0; i<30; i++){
                 const s = document.createElement('div'); s.className='snowflake'; s.innerText='❄';
                 s.style.left=Math.random()*100+'%'; s.style.animationDuration=(Math.random()*5+5)+'s';
                 document.body.appendChild(s);
             }
         }
-        setInterval(() => {
-            const d = new Date(2026, 0, 1) - new Date();
-            if(d > 0) {
-                document.getElementById('h').innerText = Math.floor(d/3600000%24).toString().padStart(2,'0');
-                document.getElementById('m').innerText = Math.floor(d/60000%60).toString().padStart(2,'0');
-                document.getElementById('s').innerText = Math.floor(d/1000%60).toString().padStart(2,'0');
-            }
-        }, 1000);
         createSnow();
-        if(myNick) { document.getElementById('loginModal').classList.add('hidden'); checkStatus(); }
+        if(myNick) { document.getElementById('loginModal').classList.add('hidden'); checkAccess(); }
     </script>
 </body>
 </html>
