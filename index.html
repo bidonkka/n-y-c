@@ -3,421 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎄 Новогодний Чат 🎄</title>
+    <title>🎄 Новогодний Чат Pro 🎄</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
+            min-height: 100vh; overflow-x: hidden; position: relative; user-select: none;
         }
 
-        .snowflake {
-            position: fixed;
-            top: -10px;
-            color: white;
-            font-size: 1em;
-            pointer-events: none;
-            z-index: 1;
-            animation: fall linear infinite;
-        }
+        /* --- Снег и Салют --- */
+        .snowflake { position: fixed; top: -10px; color: white; pointer-events: none; z-index: 1; animation: fall linear infinite; }
+        @keyframes fall { to { transform: translateY(100vh); } }
+        .firework { position: fixed; font-size: 40px; pointer-events: none; z-index: 9999; animation: firework 1s ease-out forwards; }
+        @keyframes firework { 0% { transform: scale(0); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.8; } 100% { transform: scale(0.5); opacity: 0; } }
 
-        @keyframes fall {
-            to {
-                transform: translateY(100vh);
-            }
-        }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; position: relative; z-index: 10; }
 
-        @keyframes firework {
-            0% { transform: scale(0); opacity: 1; }
-            50% { transform: scale(1.5); opacity: 0.8; }
-            100% { transform: scale(0.5); opacity: 0; }
-        }
-
-        .firework {
-            position: fixed;
-            font-size: 40px;
-            pointer-events: none;
-            z-index: 9999;
-            animation: firework 1s ease-out forwards;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            position: relative;
-            z-index: 10;
-        }
-
+        /* --- Таймер --- */
         .timer-box {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 30px;
-            padding: 30px;
-            margin-bottom: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
+            border-radius: 30px; padding: 20px; margin-bottom: 20px; border: 2px solid rgba(255, 255, 255, 0.2);
+            text-align: center; color: white;
         }
+        .timer { display: flex; justify-content: center; gap: 15px; margin-top: 10px; }
+        .time-unit { background: rgba(255, 255, 255, 0.2); padding: 10px; border-radius: 15px; min-width: 70px; }
+        .time-value { font-size: 32px; font-weight: bold; color: #fcd34d; }
 
-        .timer-title {
-            text-align: center;
-            color: white;
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .timer {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .time-unit {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(250, 204, 21, 0.5);
-            border-radius: 20px;
-            padding: 20px;
-            min-width: 90px;
-            text-align: center;
-        }
-
-        .time-value {
-            font-size: 48px;
-            font-weight: bold;
-            color: #fcd34d;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .time-label {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
-            margin-top: 5px;
-        }
-
+        /* --- Чат --- */
         .chat-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 30px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
+            border-radius: 30px; border: 2px solid rgba(255, 255, 255, 0.2); overflow: hidden;
         }
-
         .chat-header {
-            background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(249, 115, 22, 0.3));
-            padding: 20px;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: rgba(255, 255, 255, 0.1); padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
-
-        .chat-title-group {
-            flex: 1;
-        }
-
-        .chat-title {
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .chat-subtitle {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 14px;
-        }
-
-        /* Кнопки управления */
-        .controls-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .icon-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            padding: 8px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 18px;
-            transition: all 0.3s;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .icon-btn:hover {
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(1.1);
-        }
-
-        .delete-btn {
-            background: rgba(220, 38, 38, 0.6);
-            border-radius: 10px;
-            padding: 0 15px;
-            width: auto;
-        }
-
-        .delete-btn:hover {
-            background: rgba(220, 38, 38, 0.9);
-            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
-        }
-
-        .messages {
-            height: 400px;
-            overflow-y: auto;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.1);
-        }
-
-        .messages::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .messages::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-
-        .messages::-webkit-scrollbar-thumb {
-            background: rgba(251, 191, 36, 0.5);
-            border-radius: 10px;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            padding: 80px 20px;
-            font-size: 16px;
-        }
-
-        .message {
-            margin-bottom: 15px;
-            display: flex;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .message.own {
-            justify-content: flex-end;
-        }
-
+        .messages { height: 450px; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .message { display: flex; flex-direction: column; max-width: 75%; position: relative; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } }
+        
+        .message.own { align-self: flex-end; }
+        .message.other { align-self: flex-start; }
+        
         .message-content {
-            max-width: 70%;
-            padding: 12px 16px;
-            border-radius: 20px;
+            padding: 10px 15px; border-radius: 18px; cursor: pointer; position: relative;
+        }
+        .message.own .message-content { background: #f59e0b; color: white; border-bottom-right-radius: 4px; }
+        .message.other .message-content { background: rgba(255, 255, 255, 0.2); color: white; border-bottom-left-radius: 4px; }
+        
+        .message-user { font-size: 11px; opacity: 0.8; margin-bottom: 2px; padding: 0 5px; }
+        .message.own .message-user { text-align: right; }
+
+        .like-badge {
+            position: absolute; bottom: -8px; right: -5px; background: white; color: #ef4444;
+            padding: 1px 6px; border-radius: 10px; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        .message.own .message-content {
-            background: linear-gradient(135deg, #fbbf24, #f97316);
-            color: white;
-        }
+        .input-area { padding: 15px; display: flex; gap: 10px; background: rgba(0, 0, 0, 0.2); }
+        input { flex: 1; padding: 12px; border-radius: 12px; border: none; background: rgba(255, 255, 255, 0.2); color: white; outline: none; }
+        .send-btn { background: #f59e0b; border: none; padding: 10px 20px; border-radius: 12px; color: white; cursor: pointer; }
 
-        .message.other .message-content {
-            background: rgba(255, 255, 255, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
+        /* --- Модалки --- */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center; z-index: 2000;
         }
-
-        .message-username {
-            font-size: 12px;
-            opacity: 0.7;
-            margin-bottom: 4px;
-        }
-
-        .message-text {
-            word-wrap: break-word;
-            line-height: 1.4;
-        }
-
-        .message-time {
-            font-size: 11px;
-            opacity: 0.6;
-            margin-top: 4px;
-        }
-
-        .input-area {
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-top: 2px solid rgba(255, 255, 255, 0.2);
-            display: flex;
-            gap: 10px;
-        }
-
-        input {
-            flex: 1;
-            padding: 15px 20px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 15px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            font-size: 16px;
-            outline: none;
-            transition: all 0.3s;
-        }
-
-        input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        input:focus {
-            border-color: #fcd34d;
-            background: rgba(255, 255, 255, 0.25);
-        }
-
-        button {
-            padding: 15px 25px;
-            background: linear-gradient(135deg, #fbbf24, #f97316);
-            border: none;
-            border-radius: 15px;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 20px rgba(251, 191, 36, 0.4);
-        }
-
-        button:active {
-            transform: scale(0.95);
-        }
-
-        .username-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-        }
-
         .modal-content {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 30px;
-            padding: 40px;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: #1e293b; color: white; padding: 30px; border-radius: 25px;
+            width: 90%; max-width: 450px; text-align: center; border: 1px solid rgba(255,255,255,0.1);
         }
+        .hidden { display: none !important; }
 
-        .modal-title {
-            font-size: 36px;
-            color: white;
-            margin-bottom: 10px;
-            font-weight: bold;
+        /* Админ Панель Список */
+        .user-list { max-height: 200px; overflow-y: auto; margin: 15px 0; text-align: left; }
+        .user-item {
+            background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 10px;
+            margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;
         }
+        .action-btns button { padding: 4px 8px; font-size: 11px; margin-left: 5px; cursor: pointer; border: none; border-radius: 5px; color: white; }
+        .btn-kick { background: #f97316; }
+        .btn-ban { background: #ef4444; }
 
-        .modal-subtitle {
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 25px;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .new-year-celebration {
-            font-size: 60px;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
+        .icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; opacity: 0.7; transition: 0.2s; }
+        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
     </style>
 </head>
 <body>
-    <div id="usernameModal" class="username-modal">
+
+    <div id="loginModal" class="modal">
         <div class="modal-content">
-            <div class="modal-title">🎄 С Новым Годом! 🎄</div>
-            <div class="modal-subtitle">Введи своё имя, чтобы начать</div>
-            <input type="text" id="usernameInput" placeholder="Твоё имя..." maxlength="20">
-            <button onclick="setUsername()">Начать 🎉</button>
+            <h2>🎄 Добро пожаловать!</h2>
+            <p style="margin: 10px 0; opacity: 0.7;">Введите ваш никнейм</p>
+            <input type="text" id="nickInput" placeholder="Ваш ник..." maxlength="15" style="width: 100%; margin: 10px 0;">
+            <button onclick="joinChat()" class="send-btn" style="width: 100%;">Войти</button>
+        </div>
+    </div>
+
+    <div id="adminModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>⚙️ Управление</h3>
+            <div class="user-list" id="userList">
+                </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button onclick="adminAction('santa')" class="send-btn" style="background: #10b981;">🎅 От лица Мороза</button>
+                <button onclick="adminAction('fireworks')" class="send-btn" style="background: #8b5cf6;">🎆 Запустить салют</button>
+                <button onclick="adminAction('clear')" class="send-btn" style="background: #ef4444; grid-column: span 2;">🗑️ Очистить весь чат</button>
+            </div>
+            <button onclick="closeAdmin()" class="send-btn" style="background: grey; margin-top: 15px; width: 100%;">Закрыть</button>
         </div>
     </div>
 
     <div class="container">
         <div class="timer-box">
-            <div class="timer-title" id="timerTitle">⏰ До Нового Года:</div>
-            <div class="timer" id="timer">
-                <div class="time-unit">
-                    <div class="time-value" id="hours">00</div>
-                    <div class="time-label">часов</div>
-                </div>
-                <div class="time-unit">
-                    <div class="time-value" id="minutes">00</div>
-                    <div class="time-label">минут</div>
-                </div>
-                <div class="time-unit">
-                    <div class="time-value" id="seconds">00</div>
-                    <div class="time-label">секунд</div>
-                </div>
+            <h3 id="timerTitle">⏰ До праздника:</h3>
+            <div class="timer">
+                <div class="time-unit"><div class="time-value" id="h">00</div></div>
+                <div class="time-unit"><div class="time-value" id="m">00</div></div>
+                <div class="time-unit"><div class="time-value" id="s">00</div></div>
             </div>
         </div>
 
         <div class="chat-container">
             <div class="chat-header">
-                <div class="chat-title-group">
-                    <div class="chat-title">💬 Новогодний Чат</div>
-                    <div class="chat-subtitle" id="chatSubtitle">Загрузка...</div>
+                <div>
+                    <h4 id="userNameDisplay">Новогодний Чат</h4>
+                    <span style="font-size: 11px; opacity: 0.6;">Онлайн-общение</span>
                 </div>
-                <div class="controls-group">
-                    <button id="clearChatBtn" class="icon-btn delete-btn hidden" onclick="clearChat()" title="Очистить чат">🗑️</button>
-                    <button class="icon-btn" onclick="logout()" title="Сменить имя / Выйти">🚪</button>
-                    <button class="icon-btn" onclick="adminLogin()" title="Вход для админа">⚙️</button>
+                <div>
+                    <button class="icon-btn" onclick="logout()">🚪</button>
+                    <button class="icon-btn" onclick="openAdmin()">⚙️</button>
                 </div>
             </div>
-            <div class="messages" id="messages">
-                <div class="empty-state">Пока нет сообщений... Напиши первым! 🎅</div>
-            </div>
+            <div class="messages" id="chatBox"></div>
             <div class="input-area">
-                <input type="text" id="messageInput" placeholder="Напиши сообщение..." maxlength="500">
-                <button onclick="sendMessage()">Отправить 📨</button>
+                <input type="text" id="msgInput" placeholder="Напишите сообщение...">
+                <button class="send-btn" onclick="sendMsg()">📨</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, push, onChildAdded, remove, onValue, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getDatabase, ref, push, onChildAdded, onChildChanged, remove, onValue, set, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDOhC3fadF5gs73HgD3kkeRFE1YGgixgAA",
@@ -430,190 +159,210 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-        const messagesRef = ref(database, 'messages');
+        const db = getDatabase(app);
+        
+        let myNick = localStorage.getItem('chat_nick');
+        const ADMIN_PASS = "2025";
 
-        const ADMIN_PASSWORD = "2025"; 
+        // --- УВЕДОМЛЕНИЯ ---
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
 
-        let username = localStorage.getItem('username');
-        let isNewYear = false;
-
-        // Снежинки
-        function createSnowflakes() {
-            for (let i = 0; i < 50; i++) {
-                const snowflake = document.createElement('div');
-                snowflake.className = 'snowflake';
-                snowflake.textContent = '❄';
-                snowflake.style.left = Math.random() * 100 + '%';
-                snowflake.style.fontSize = (Math.random() * 10 + 10) + 'px';
-                snowflake.style.animationDuration = (Math.random() * 10 + 5) + 's';
-                snowflake.style.animationDelay = Math.random() * 5 + 's';
-                document.body.appendChild(snowflake);
+        function showNotification(user, text) {
+            if (document.hidden && Notification.permission === "granted") {
+                new Notification("🎄 Новое сообщение", { body: `${user}: ${text}`, icon: "https://cdn-icons-png.flaticon.com/512/3893/3893071.png" });
             }
         }
 
-        // Фейерверки
-        function createFirework() {
-            const firework = document.createElement('div');
-            firework.className = 'firework';
-            firework.textContent = '✨';
-            firework.style.left = Math.random() * 100 + '%';
-            firework.style.top = Math.random() * 100 + '%';
-            document.body.appendChild(firework);
-            setTimeout(() => firework.remove(), 1000);
-        }
-
-        function launchFireworks() {
-            for (let i = 0; i < 20; i++) {
-                setTimeout(() => createFirework(), Math.random() * 2000);
-            }
-        }
-
-        // Таймер
-        function updateTimer() {
-            const now = new Date();
-            const newYear = new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0);
-            const diff = newYear - now;
-
-            if (diff <= 0 && !isNewYear) {
-                isNewYear = true;
-                document.getElementById('timerTitle').innerHTML = '🎊 С НОВЫМ ГОДОМ! 🎊';
-                document.getElementById('timer').innerHTML = '<div class="new-year-celebration">🎉🎆🎊</div>';
-                launchFireworks();
-                setTimeout(launchFireworks, 3000);
-                return;
-            }
-
-            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-            const minutes = Math.floor((diff / 1000 / 60) % 60);
-            const seconds = Math.floor((diff / 1000) % 60);
-
-            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
-            document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
-            document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
-        }
-
-        // --- ЛОГИКА АДМИНА ---
-        window.adminLogin = function() {
-            const btn = document.getElementById('clearChatBtn');
-            if (!btn.classList.contains('hidden')) {
-                btn.classList.add('hidden');
-                return;
-            }
-
-            const inputPass = prompt("🎅 Введите пароль Деда Мороза (Админа):");
-            if (inputPass === ADMIN_PASSWORD) {
-                btn.classList.remove('hidden');
-                alert("Привет, Админ! Теперь ты можешь удалить переписку.");
-            } else if (inputPass !== null) {
-                alert("Неверный пароль! ❄️");
-            }
-        };
-
-        window.clearChat = function() {
-            if (confirm("Вы точно хотите удалить ВСЕ сообщения навсегда?")) {
-                remove(messagesRef)
-                    .then(() => {
-                        console.log("Чат очищен");
-                    })
-                    .catch((error) => {
-                        alert("Ошибка: " + error.message);
-                    });
-            }
-        };
-
-        // --- ЛОГИКА ВЫХОДА / СМЕНЫ ИМЕНИ ---
-        window.logout = function() {
-            localStorage.removeItem('username'); // Удаляем имя из памяти
-            username = null;
-            document.getElementById('usernameModal').classList.remove('hidden'); // Показываем окно входа
-            document.getElementById('usernameInput').value = ''; // Очищаем поле ввода
-            document.getElementById('chatSubtitle').textContent = 'Жду гостя...'; // Меняем подзаголовок
-        };
-
-        // Установка имени
-        window.setUsername = function() {
-            const input = document.getElementById('usernameInput');
-            if (input.value.trim()) {
-                username = input.value.trim();
-                localStorage.setItem('username', username);
-                document.getElementById('usernameModal').classList.add('hidden');
-                document.getElementById('chatSubtitle').textContent = `Привет, ${username}! 🎄`;
-            }
-        };
-
-        // Отправка сообщения
-        window.sendMessage = function() {
-            const input = document.getElementById('messageInput');
-            const text = input.value.trim();
+        // --- БАН И КИК СИСТЕМА ---
+        function checkUserStatus() {
+            if (!myNick) return;
             
-            if (text && username) {
-                push(messagesRef, {
-                    username: username,
-                    text: text,
-                    timestamp: serverTimestamp()
+            // Проверка на бан
+            onValue(ref(db, 'banned/' + myNick), (snap) => {
+                if (snap.exists()) {
+                    const banUntil = snap.val();
+                    if (Date.now() < banUntil) {
+                        alert(`❌ Вы забанены до ${new Date(banUntil).toLocaleTimeString()}`);
+                        logout();
+                    }
+                }
+            });
+
+            // Проверка на кик
+            onValue(ref(db, 'users/' + myNick + '/kicked'), (snap) => {
+                if (snap.val() === true) {
+                    set(ref(db, 'users/' + myNick + '/kicked'), false);
+                    alert("⚠️ Вы были кикнуты администратором!");
+                    logout();
+                }
+            });
+        }
+
+        // --- ФУНКЦИИ ВХОДА ---
+        window.joinChat = () => {
+            const nick = document.getElementById('nickInput').value.trim();
+            if (!nick) return;
+
+            // Сначала проверим, не в бане ли ник
+            onValue(ref(db, 'banned/' + nick), (snap) => {
+                if (snap.exists() && Date.now() < snap.val()) {
+                    alert("❌ Этот ник забанен!");
+                } else {
+                    myNick = nick;
+                    localStorage.setItem('chat_nick', nick);
+                    set(ref(db, 'users/' + nick), { lastSeen: serverTimestamp(), kicked: false });
+                    document.getElementById('loginModal').classList.add('hidden');
+                    document.getElementById('userNameDisplay').innerText = "Привет, " + myNick;
+                    checkUserStatus();
+                }
+            }, { onlyOnce: true });
+        };
+
+        window.logout = () => {
+            localStorage.removeItem('chat_nick');
+            location.reload();
+        };
+
+        // --- ЧАТ ЛОГИКА ---
+        window.sendMsg = () => {
+            const inp = document.getElementById('msgInput');
+            if (inp.value.trim() && myNick) {
+                push(ref(db, 'messages'), {
+                    user: myNick,
+                    text: inp.value.trim(),
+                    time: serverTimestamp(),
+                    likes: 0
                 });
-                input.value = '';
+                inp.value = "";
             }
         };
 
-        // Слушатель очистки чата
-        onValue(messagesRef, (snapshot) => {
-            if (!snapshot.exists()) {
-                const messagesDiv = document.getElementById('messages');
-                messagesDiv.innerHTML = '<div class="empty-state">🎄 Чат был очищен. Начнем с чистого листа! ❄️</div>';
-            }
-        });
+        onChildAdded(ref(db, 'messages'), (snap) => {
+            const m = snap.val();
+            const box = document.getElementById('chatBox');
+            const div = document.createElement('div');
+            div.className = `message ${m.user === myNick ? 'own' : 'other'}`;
+            div.id = "m-" + snap.key;
+            
+            const likesCount = m.likes || 0;
+            const likeHtml = likesCount > 0 ? `<div class="like-badge">❤️ ${likesCount}</div>` : "";
 
-        // Получение новых сообщений
-        onChildAdded(messagesRef, (snapshot) => {
-            const message = snapshot.val();
-            const messagesDiv = document.getElementById('messages');
-            
-            const emptyState = messagesDiv.querySelector('.empty-state');
-            if (emptyState) {
-                emptyState.remove();
-            }
-
-            const messageDiv = document.createElement('div');
-            // Проверка на 'own' теперь динамическая (зависит от текущего username)
-            messageDiv.className = 'message ' + (message.username === username ? 'own' : 'other');
-            
-            const time = message.timestamp ? new Date(message.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '';
-            
-            messageDiv.innerHTML = `
-                <div class="message-content">
-                    <div class="message-username">${message.username}</div>
-                    <div class="message-text">${message.text}</div>
-                    <div class="message-time">${time}</div>
+            div.innerHTML = `
+                <div class="message-user">${m.user}</div>
+                <div class="message-content" ondblclick="addLike('${snap.key}')">
+                    ${m.text}
+                    ${likeHtml}
                 </div>
             `;
-            
-            messagesDiv.appendChild(messageDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+            if (m.user !== myNick) showNotification(m.user, m.text);
         });
 
-        // Enter для отправки
-        document.getElementById('messageInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
+        window.addLike = (key) => {
+            const likeRef = ref(db, `messages/${key}/likes`);
+            onValue(likeRef, (snap) => {
+                set(likeRef, (snap.val() || 0) + 1);
+            }, { onlyOnce: true });
+        };
+
+        onChildChanged(ref(db, 'messages'), (snap) => {
+            const el = document.getElementById("m-" + snap.key);
+            if (el) {
+                const likes = snap.val().likes || 0;
+                let badge = el.querySelector('.like-badge');
+                if (likes > 0) {
+                    if (!badge) {
+                        el.querySelector('.message-content').insertAdjacentHTML('beforeend', `<div class="like-badge">❤️ ${likes}</div>`);
+                    } else {
+                        badge.innerText = "❤️ " + likes;
+                    }
+                }
             }
         });
 
-        document.getElementById('usernameInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                setUsername();
+        // --- АДМИНКА ---
+        window.openAdmin = () => {
+            if (prompt("Пароль:") === ADMIN_PASS) {
+                document.getElementById('adminModal').classList.remove('hidden');
+                loadUsers();
             }
-        });
+        };
 
-        // Инициализация
-        createSnowflakes();
-        updateTimer();
+        window.closeAdmin = () => document.getElementById('adminModal').classList.add('hidden');
+
+        function loadUsers() {
+            onValue(ref(db, 'users'), (snap) => {
+                const list = document.getElementById('userList');
+                list.innerHTML = "";
+                snap.forEach(child => {
+                    const name = child.key;
+                    list.innerHTML += `
+                        <div class="user-item">
+                            <span>${name}</span>
+                            <div class="action-btns">
+                                <button class="btn-kick" onclick="kickUser('${name}')">Kick</button>
+                                <button class="btn-ban" onclick="banUser('${name}')">Ban 10m</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        window.kickUser = (name) => set(ref(db, `users/${name}/kicked`), true);
+        window.banUser = (name) => {
+            const until = Date.now() + (10 * 60 * 1000); // 10 минут
+            set(ref(db, 'banned/' + name), until);
+            kickUser(name);
+        };
+
+        window.adminAction = (act) => {
+            if (act === 'clear') remove(ref(db, 'messages'));
+            if (act === 'fireworks') set(ref(db, 'signal/fire'), Date.now());
+            if (act === 'santa') {
+                const t = prompt("Что скажет Дед Мороз?");
+                if (t) push(ref(db, 'messages'), { user: "🎅 Дед Мороз", text: t, time: serverTimestamp() });
+            }
+        };
+
+        // Глобальный салют
+        onValue(ref(db, 'signal/fire'), () => launchFireworks());
+
+        // --- ТЕХНИЧЕСКОЕ ---
+        function createSnow() {
+            for(let i=0; i<30; i++) {
+                const s = document.createElement('div');
+                s.className = 'snowflake'; s.innerText = '❄';
+                s.style.left = Math.random()*100+'%'; s.style.animationDuration = (Math.random()*5+5)+'s';
+                document.body.appendChild(s);
+            }
+        }
+        function launchFireworks() {
+            for(let i=0; i<15; i++) {
+                setTimeout(() => {
+                    const f = document.createElement('div'); f.className = 'firework'; f.innerText = '✨';
+                    f.style.left = Math.random()*100+'%'; f.style.top = Math.random()*100+'%';
+                    document.body.appendChild(f); setTimeout(()=>f.remove(), 1000);
+                }, i*100);
+            }
+        }
+        function updateTimer() {
+            const diff = new Date(new Date().getFullYear() + 1, 0, 1) - new Date();
+            if (diff <= 0) { document.getElementById('timerTitle').innerText = "🎄 С НОВЫМ ГОДОМ! 🎄"; return; }
+            document.getElementById('h').innerText = Math.floor(diff/3600000%24);
+            document.getElementById('m').innerText = Math.floor(diff/60000%60);
+            document.getElementById('s').innerText = Math.floor(diff/1000%60);
+        }
+
+        createSnow();
         setInterval(updateTimer, 1000);
-
-        if (username) {
-            document.getElementById('usernameModal').classList.add('hidden');
-            document.getElementById('chatSubtitle').textContent = `Привет, ${username}! 🎄`;
+        if (myNick) {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.getElementById('userNameDisplay').innerText = "Привет, " + myNick;
+            checkUserStatus();
         }
     </script>
 </body>
