@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎄 Новогодний Кинотеатр 2025 🎄</title>
+    <script src="https://www.youtube.com/iframe_api"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -68,19 +69,53 @@
         }
         .cinema-wrapper.active { display: block; }
         
-        #videoFrame {
+        #ytPlayer {
             width: 100%; height: 100%;
-            border: none; display: block;
         }
 
-        .video-overlay {
-            position: absolute; inset: 0; z-index: 100;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            gap: 15px;
+        .player-controls {
+            position: absolute; bottom: 0; left: 0; right: 0; z-index: 50;
+            background: linear-gradient(transparent, rgba(0,0,0,0.9));
+            padding: 15px; display: none; align-items: center; gap: 10px;
         }
-        .video-overlay.hidden { display: none; }
+        .player-controls.active { display: flex; }
+
+        .play-btn {
+            background: #fcd34d; border: none; color: black;
+            width: 40px; height: 40px; border-radius: 50%;
+            cursor: pointer; font-size: 18px; display: flex;
+            align-items: center; justify-content: center;
+            transition: transform 0.2s;
+        }
+        .play-btn:hover { transform: scale(1.1); }
+
+        .progress-container {
+            flex: 1; display: flex; align-items: center; gap: 10px;
+        }
+        .progress-bar {
+            flex: 1; height: 6px; background: rgba(255,255,255,0.2);
+            border-radius: 10px; cursor: pointer; position: relative;
+        }
+        .progress-fill {
+            height: 100%; background: #fcd34d; border-radius: 10px;
+            width: 0%; transition: width 0.3s;
+        }
+        .time-display {
+            font-size: 12px; min-width: 80px; text-align: right;
+        }
+
+        .sync-status {
+            position: absolute; top: 15px; right: 15px; z-index: 60;
+            background: rgba(0,0,0,0.7); padding: 8px 15px;
+            border-radius: 20px; font-size: 12px; display: none;
+        }
+        .sync-status.active { display: block; }
+        .sync-dot {
+            display: inline-block; width: 8px; height: 8px;
+            background: #10b981; border-radius: 50%; margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
         /* ЧАТ */
         .chat-container {
@@ -174,16 +209,6 @@
             border-radius: 8px; font-size: 12px;
             margin: 5px; display: inline-block;
         }
-
-        .status-indicator {
-            display: inline-block; width: 8px; height: 8px;
-            background: #10b981; border-radius: 50%;
-            margin-right: 5px; animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
     </style>
 </head>
 <body>
@@ -205,7 +230,8 @@
             
             <div class="admin-section">
                 <p style="margin-bottom:10px; font-weight:bold">Запустить видео:</p>
-                <input type="text" id="videoUrl" placeholder="Вставь ссылку YouTube..." style="width:100%; margin-bottom:10px">
+                <input type="text" id="videoUrl" placeholder="YouTube ссылка или ID..." style="width:100%; margin-bottom:10px">
+                <p style="font-size:11px; opacity:0.7; margin-bottom:10px">Примеры: youtube.com/watch?v=XXX или просто XXX</p>
                 <div style="display:flex; gap:10px">
                     <button class="btn" onclick="startVideo()" style="flex:1; background:#10b981">▶ СТАРТ</button>
                     <button class="btn" onclick="stopVideo()" style="flex:1; background:#ef4444">■ СТОП</button>
@@ -213,9 +239,7 @@
             </div>
 
             <div class="admin-section">
-                <p style="font-weight:bold; margin-bottom:10px">
-                    <span class="status-indicator"></span>Сейчас в сети:
-                </p>
+                <p style="font-weight:bold; margin-bottom:10px">🟢 Сейчас в сети:</p>
                 <div id="onlineList"></div>
             </div>
 
@@ -245,11 +269,20 @@
 
         <!-- ПЛЕЕР -->
         <div id="cinema" class="cinema-wrapper">
-            <iframe id="videoFrame" allow="autoplay; fullscreen"></iframe>
-            <div id="videoOverlay" class="video-overlay">
-                <p style="font-size:18px">🎬 Видео готово</p>
-                <p style="opacity:0.7; margin-bottom:10px">Синхронизируйся для совместного просмотра</p>
-                <button class="btn" onclick="syncVideo()">СМОТРЕТЬ ВМЕСТЕ 🍿</button>
+            <div id="ytPlayer"></div>
+            
+            <div id="syncStatus" class="sync-status">
+                <span class="sync-dot"></span>Синхронизировано
+            </div>
+
+            <div id="playerControls" class="player-controls">
+                <button class="play-btn" onclick="togglePlay()" id="playBtn">▶</button>
+                <div class="progress-container">
+                    <div class="progress-bar" onclick="seekVideo(event)" id="progressBar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
+                </div>
             </div>
         </div>
 
@@ -271,7 +304,7 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, push, onChildAdded, remove, onValue, set, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getDatabase, ref, push, onChildAdded, remove, onValue, set, update, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDOhC3fadF5gs73HgD3kkeRFE1YGgixgAA",
@@ -288,7 +321,10 @@
         
         let myNick = localStorage.getItem('chat_nick');
         let isAdmin = localStorage.getItem('is_admin') === 'true';
-        let currentVideoData = null;
+        let player = null;
+        let playerReady = false;
+        let currentState = null;
+        let isSyncing = false;
 
         // === СНЕЖИНКИ ===
         for (let i = 0; i < 50; i++) {
@@ -350,56 +386,190 @@
             }
         });
 
-        // === ВИДЕО ПЛЕЕР ===
-        onValue(ref(db, 'video/current'), (snap) => {
-            currentVideoData = snap.val();
-            const cinema = document.getElementById('cinema');
-            const frame = document.getElementById('videoFrame');
-            const overlay = document.getElementById('videoOverlay');
+        // === YOUTUBE PLAYER API ===
+        window.onYouTubeIframeAPIReady = () => {
+            player = new YT.Player('ytPlayer', {
+                height: '100%',
+                width: '100%',
+                playerVars: {
+                    controls: 0,
+                    disablekb: 1,
+                    modestbranding: 1,
+                    rel: 0,
+                    showinfo: 0,
+                    fs: 1
+                },
+                events: {
+                    'onReady': () => {
+                        playerReady = true;
+                        console.log('Player ready!');
+                    },
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        };
 
-            if (!currentVideoData || !currentVideoData.url) {
+        function onPlayerStateChange(event) {
+            if (isAdmin && !isSyncing) {
+                // Админ изменил состояние - обновляем в базе
+                const state = event.data;
+                const time = player.getCurrentTime();
+                
+                if (state === YT.PlayerState.PLAYING) {
+                    updateState('playing', time);
+                } else if (state === YT.PlayerState.PAUSED) {
+                    updateState('paused', time);
+                }
+            }
+        }
+
+        function updateState(status, time) {
+            if (!currentState) return;
+            update(ref(db, 'video/current'), {
+                status: status,
+                time: time,
+                updatedAt: Date.now()
+            });
+        }
+
+        // === СИНХРОНИЗАЦИЯ ===
+        onValue(ref(db, 'video/current'), (snap) => {
+            currentState = snap.val();
+            const cinema = document.getElementById('cinema');
+            const controls = document.getElementById('playerControls');
+            const syncStatus = document.getElementById('syncStatus');
+
+            if (!currentState || !currentState.videoId) {
                 cinema.classList.remove('active');
+                controls.classList.remove('active');
+                syncStatus.classList.remove('active');
                 return;
             }
 
             cinema.classList.add('active');
+            syncStatus.classList.add('active');
             
-            // Извлекаем ID из YouTube ссылки
-            let videoId = '';
-            const match = currentVideoData.url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?#]+)/);
-            if (match) {
-                videoId = match[1];
-                const timestamp = currentVideoData.time || 0;
-                const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&start=${Math.floor(timestamp)}&enablejsapi=1`;
-                frame.src = embedUrl;
+            if (isAdmin) {
+                controls.classList.add('active');
             }
 
-            // Показываем оверлей если не админ
-            if (!isAdmin) {
-                overlay.classList.remove('hidden');
-            } else {
-                overlay.classList.add('hidden');
+            if (!playerReady) {
+                console.log('Player not ready yet...');
+                return;
             }
+
+            // Загружаем видео если нужно
+            if (player.getVideoData().video_id !== currentState.videoId) {
+                player.loadVideoById(currentState.videoId);
+            }
+
+            // Синхронизируем состояние
+            syncPlayer();
         });
 
-        window.syncVideo = () => {
-            document.getElementById('videoOverlay').classList.add('hidden');
-            // Перезагружаем фрейм для синхронизации
-            const frame = document.getElementById('videoFrame');
-            const currentSrc = frame.src;
-            frame.src = '';
-            setTimeout(() => frame.src = currentSrc, 100);
+        function syncPlayer() {
+            if (!currentState || !playerReady || isAdmin) return;
+
+            isSyncing = true;
+            
+            const targetTime = currentState.time || 0;
+            const currentTime = player.getCurrentTime();
+            const timeDiff = Math.abs(currentTime - targetTime);
+
+            // Если разница больше 2 секунд - перематываем
+            if (timeDiff > 2) {
+                player.seekTo(targetTime, true);
+            }
+
+            // Синхронизируем play/pause
+            if (currentState.status === 'playing' && player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                player.playVideo();
+            } else if (currentState.status === 'paused' && player.getPlayerState() === YT.PlayerState.PLAYING) {
+                player.pauseVideo();
+            }
+
+            setTimeout(() => { isSyncing = false; }, 500);
+        }
+
+        // Автосинхронизация каждые 2 секунды для не-админов
+        setInterval(() => {
+            if (!isAdmin && currentState && playerReady) {
+                syncPlayer();
+            }
+        }, 2000);
+
+        // === УПРАВЛЕНИЕ ПЛЕЕРОМ (ДЛЯ АДМИНА) ===
+        window.togglePlay = () => {
+            if (!isAdmin || !playerReady) return;
+            
+            const state = player.getPlayerState();
+            if (state === YT.PlayerState.PLAYING) {
+                player.pauseVideo();
+            } else {
+                player.playVideo();
+            }
         };
+
+        window.seekVideo = (e) => {
+            if (!isAdmin || !playerReady) return;
+            
+            const bar = e.currentTarget;
+            const rect = bar.getBoundingClientRect();
+            const percent = (e.clientX - rect.left) / rect.width;
+            const duration = player.getDuration();
+            const newTime = duration * percent;
+            
+            player.seekTo(newTime, true);
+            updateState(currentState.status, newTime);
+        };
+
+        // Обновление прогресс бара
+        setInterval(() => {
+            if (playerReady && currentState) {
+                const current = player.getCurrentTime();
+                const duration = player.getDuration();
+                const percent = (current / duration) * 100;
+                
+                document.getElementById('progressFill').style.width = percent + '%';
+                
+                const formatTime = (sec) => {
+                    const m = Math.floor(sec / 60);
+                    const s = Math.floor(sec % 60);
+                    return `${m}:${s.toString().padStart(2, '0')}`;
+                };
+                
+                document.getElementById('timeDisplay').textContent = 
+                    `${formatTime(current)} / ${formatTime(duration)}`;
+                
+                document.getElementById('playBtn').textContent = 
+                    player.getPlayerState() === YT.PlayerState.PLAYING ? '⏸' : '▶';
+            }
+        }, 200);
+
+        // Если админ - обновляем время в базе каждые 3 секунды
+        setInterval(() => {
+            if (isAdmin && playerReady && currentState && player.getPlayerState() === YT.PlayerState.PLAYING) {
+                updateState('playing', player.getCurrentTime());
+            }
+        }, 3000);
 
         // === УПРАВЛЕНИЕ АДМИНА ===
         window.startVideo = () => {
-            const url = document.getElementById('videoUrl').value.trim();
-            if (!url) return;
+            let input = document.getElementById('videoUrl').value.trim();
+            if (!input) return;
+            
+            // Извлекаем ID из разных форматов
+            let videoId = input;
+            const match = input.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?#]+)/);
+            if (match) {
+                videoId = match[1];
+            }
             
             set(ref(db, 'video/current'), {
-                url: url,
+                videoId: videoId,
+                status: 'paused',
                 time: 0,
-                startedAt: Date.now()
+                updatedAt: Date.now()
             });
             
             document.getElementById('adminModal').classList.add('hidden');
