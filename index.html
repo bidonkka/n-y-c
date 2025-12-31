@@ -3,115 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎄 Новогодний Кинотеатр Pro 🎄</title>
-    <script src="https://www.youtube.com/iframe_api"></script> <style>
+    <title>🎄 Новогодний Кинотеатр 2025 🎄</title>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%); min-height: 100vh; overflow-x: hidden; color: white; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; overflow-x: hidden; }
         
-        .snowflake { position: fixed; top: -10px; color: #fff; pointer-events: none; z-index: 1; animation: fall linear infinite; font-size: 20px; }
-        @keyframes fall { to { transform: translateY(100vh) rotate(360deg); } }
+        .container { max-width: 900px; margin: 0 auto; padding: 15px; }
 
-        .container { max-width: 900px; margin: 0 auto; padding: 20px; position: relative; z-index: 10; }
-
-        /* --- УНИВЕРСАЛЬНЫЙ ПЛЕЕР --- */
-        .cinema-container {
-            background: #000; border: 2px solid #fcd34d; border-radius: 20px;
-            overflow: hidden; margin-bottom: 20px; position: relative;
-            box-shadow: 0 0 30px rgba(252, 211, 77, 0.3); display: none;
-            aspect-ratio: 16/9; /* Фиксируем пропорции */
+        /* --- ПЛЕЕР --- */
+        .cinema-wrapper {
+            background: #000; border-radius: 20px; border: 2px solid #fcd34d;
+            position: relative; overflow: hidden; margin-bottom: 15px;
+            aspect-ratio: 16/9; display: none; box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-        
-        /* Слой для YouTube и MP4 */
-        #youtube-player-placeholder, #html5-player { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-        #html5-player { object-fit: contain; }
+        #yt-player, #html5-player { width: 100%; height: 100%; position: absolute; inset: 0; }
+        .hidden { display: none !important; }
 
-        /* Перекрывающий слой (чтобы обычные юзеры не тыкали паузу сами) */
-        .blocker-layer { position: absolute; inset: 0; z-index: 10; background: transparent; }
-
-        /* Панель управления (Только Админ) */
-        .controls-layer {
-            position: absolute; bottom: 0; left: 0; right: 0; z-index: 20;
-            background: rgba(0, 0, 0, 0.8); padding: 10px; display: flex; align-items: center; gap: 10px;
+        /* Кнопка активации звука/видео для юзеров */
+        #sync-overlay {
+            position: absolute; inset: 0; z-index: 100; background: rgba(0,0,0,0.8);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .control-btn { background: none; border: none; color: #fcd34d; font-size: 24px; cursor: pointer; padding: 0 10px; }
-        .progress-bar { flex: 1; cursor: pointer; height: 5px; }
-        .time-display { font-size: 14px; font-family: monospace; min-width: 100px; text-align: center; }
+
+        /* Админ-панель плеера */
+        .admin-controls {
+            position: absolute; bottom: 0; left: 0; right: 0; z-index: 110;
+            background: rgba(0,0,0,0.8); padding: 10px; display: flex; align-items: center; gap: 10px;
+        }
+        .progress-bar { flex: 1; accent-color: #fcd34d; cursor: pointer; }
 
         /* Чат */
-        .chat-container { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border-radius: 30px; border: 2px solid rgba(255, 255, 255, 0.2); overflow: hidden; height: 500px; display: flex; flex-direction: column; }
-        .chat-header { padding: 15px; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; }
-        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; }
-        .message { margin-bottom: 10px; max-width: 80%; padding: 8px 12px; border-radius: 15px; font-size: 14px; }
-        .message.own { align-self: flex-end; background: linear-gradient(135deg, #fbbf24, #f97316); }
-        .message.other { align-self: flex-start; background: rgba(255,255,255,0.2); }
-        .input-area { padding: 15px; display: flex; gap: 10px; background: rgba(0,0,0,0.2); }
-        input { flex: 1; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.2); color: white; outline: none; }
+        .chat-area { background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); height: 400px; display: flex; flex-direction: column; }
+        #chatBox { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 8px 12px; border-radius: 12px; max-width: 80%; font-size: 14px; line-height: 1.4; }
+        .msg.own { align-self: flex-end; background: #f59e0b; color: black; }
+        .msg.other { align-self: flex-start; background: #334155; }
+
+        .input-box { padding: 15px; display: flex; gap: 8px; }
+        input { background: #1e293b; border: 1px solid #475569; color: white; padding: 10px; border-radius: 10px; flex: 1; outline: none; }
         
         /* Модалки */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: flex; justify-content: center; align-items: center; }
-        .modal-content { background: #1e293b; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; border: 1px solid #555; }
-        .hidden { display: none !important; }
-        .user-item { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px solid #333; margin-bottom: 5px; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal-inner { background: #1e293b; padding: 25px; border-radius: 20px; width: 100%; max-width: 400px; text-align: center; }
+        .btn { background: #fcd34d; color: black; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        
+        .user-tag { background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 2px 8px; border-radius: 5px; font-size: 12px; margin: 5px; display: inline-block; }
     </style>
 </head>
 <body>
 
     <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <h2 style="color:#fcd34d">🎄 КИНО-ЧАТ</h2>
-            <input type="text" id="nickInput" placeholder="Никнейм..." style="width:100%; margin:20px 0; padding:10px;">
-            <button onclick="joinChat()" style="width:100%; padding:10px; background:#f59e0b; border:none; border-radius:5px; cursor:pointer;">ВОЙТИ</button>
+        <div class="modal-inner">
+            <h2 style="margin-bottom:15px">🎉 С Новым Годом!</h2>
+            <input type="text" id="nickInput" placeholder="Ваш ник..." maxlength="15">
+            <button class="btn" onclick="join()" style="width:100%; margin-top:10px">ВОЙТИ</button>
         </div>
     </div>
 
     <div id="adminModal" class="modal hidden">
-        <div class="modal-content">
+        <div class="modal-inner">
             <h3>⚙️ Управление</h3>
-            <div style="background:#333; padding:10px; border-radius:10px; margin:15px 0;">
-                <p>🎬 <b>Ссылка (YouTube или .mp4):</b></p>
-                <input type="text" id="mediaUrl" placeholder="https://youtube.com/watch?v=..." style="width:100%; margin-bottom:10px; padding:5px;">
-                <button onclick="startMedia()" style="background:#10b981; border:none; padding:8px 20px; color:white; border-radius:5px; cursor:pointer;">▶️ ЗАПУСТИТЬ</button>
-                <button onclick="stopMedia()" style="background:#ef4444; border:none; padding:8px 20px; color:white; border-radius:5px; cursor:pointer; margin-top:5px;">⏹ СТОП</button>
-            </div>
-            <div id="userList" style="text-align:left; margin-bottom:15px;"></div>
-            <button onclick="closeAdmin()" style="width:100%; padding:10px;">Закрыть</button>
+            <input type="text" id="mediaUrl" placeholder="YouTube или прямая ссылка .mp4" style="width:100%; margin:10px 0">
+            <button class="btn" onclick="startMedia()" style="background:#10b981; color:white">СТАРТ</button>
+            <button class="btn" onclick="stopMedia()" style="background:#ef4444; color:white">СТОП</button>
+            <div id="onlineList" style="margin-top:15px; text-align:left; border-top:1px solid #444; padding-top:10px;"></div>
+            <button class="btn" onclick="closeAdmin()" style="margin-top:15px; background:#475569; color:white">ЗАКРЫТЬ</button>
         </div>
     </div>
 
     <div class="container">
-        <div id="cinema" class="cinema-container">
-            <video id="html5-player" class="hidden"></video>
-            <div id="youtube-player-placeholder"></div>
+        <div id="cinema" class="cinema-wrapper">
+            <div id="yt-player"></div>
+            <video id="html5-player" class="hidden" playsinline></video>
             
-            <div id="clickBlocker" class="blocker-layer"></div>
+            <div id="sync-overlay" class="hidden">
+                <p style="margin-bottom:10px">Видео готово к просмотру</p>
+                <button class="btn" onclick="forceSync()">СМОТРЕТЬ ВМЕСТЕ 🍿</button>
+            </div>
 
-            <div id="adminControls" class="controls-layer hidden">
-                <button id="btnPlay" class="control-btn">▶</button>
-                <button id="btnPause" class="control-btn hidden">⏸</button>
-                <input type="range" id="progressBar" class="progress-bar" min="0" value="0" step="1">
-                <span id="timeDisplay" class="time-display">00:00 / 00:00</span>
+            <div id="adminControls" class="admin-controls hidden">
+                <button onclick="togglePlay()" id="playBtn" style="background:none; border:none; color:#fcd34d; font-size:20px; cursor:pointer">▶</button>
+                <input type="range" id="progressBar" class="progress-bar" min="0" value="0">
+                <span id="timeShow" style="font-size:12px">00:00</span>
             </div>
         </div>
 
-        <div class="chat-container">
-            <div class="chat-header">
-                <h3>Новогодний Чат</h3>
-                <div>
-                    <button onclick="logout()" style="background:none; border:none; font-size:20px; cursor:pointer;">🚪</button>
-                    <button onclick="openAdmin()" style="background:none; border:none; font-size:20px; cursor:pointer;">⚙️</button>
-                </div>
+        <div class="chat-area">
+            <div style="padding:10px; border-bottom:1px solid #333; display:flex; justify-content:space-between">
+                <span>🎄 Чат</span>
+                <button onclick="openAdmin()" style="background:none; border:none; color:#fcd34d; cursor:pointer">Настройки</button>
             </div>
-            <div class="messages" id="chatBox"></div>
-            <div class="input-area">
+            <div id="chatBox"></div>
+            <div class="input-box">
                 <input type="text" id="msgInput" placeholder="Сообщение...">
-                <button onclick="sendMsg()" style="padding:10px 20px; border:none; background:#fcd34d; border-radius:10px; cursor:pointer;">📨</button>
+                <button onclick="send()" class="btn">📨</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, push, onChildAdded, remove, onValue, set, serverTimestamp, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getDatabase, ref, push, onChildAdded, remove, onValue, set, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDOhC3fadF5gs73HgD3kkeRFE1YGgixgAA",
@@ -125,259 +118,164 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
         let myNick = localStorage.getItem('chat_nick');
-        const ADMIN_PASS = "2025";
-        let isAdmin = localStorage.getItem('admin_access') === ADMIN_PASS;
-        
-        // Переменные плееров
+        let isAdmin = localStorage.getItem('is_admin') === 'true';
         let ytPlayer = null;
-        let html5Player = document.getElementById('html5-player');
-        let currentMode = null; // 'youtube' or 'html5'
-        let duration = 0;
+        let htmlPlayer = document.getElementById('html5-player');
+        let currentData = null;
 
-        // --- ИНИЦИАЛИЗАЦИЯ YOUTUBE API ---
-        window.onYouTubeIframeAPIReady = function() {
-            ytPlayer = new YT.Player('youtube-player-placeholder', {
-                height: '100%', width: '100%',
-                playerVars: { 'controls': 0, 'rel': 0, 'showinfo': 0, 'modestbranding': 1 },
-                events: {
-                    'onReady': onPlayerReady
-                }
-            });
-        };
-
-        function onPlayerReady(event) {
-            // Плеер готов
-        }
-
-        // --- ЛОГИКА СИНХРОНИЗАЦИИ ---
-        const cinemaBox = document.getElementById('cinema');
-        const adminControls = document.getElementById('adminControls');
-        const blocker = document.getElementById('clickBlocker');
-        const btnPlay = document.getElementById('btnPlay');
-        const btnPause = document.getElementById('btnPause');
-        const progressBar = document.getElementById('progressBar');
-        const timeDisplay = document.getElementById('timeDisplay');
-
-        // Слушаем Firebase
-        onValue(ref(db, 'cinema/state'), (snap) => {
-            const data = snap.val();
-            
-            // Если данных нет - скрываем всё
-            if (!data) {
-                cinemaBox.style.display = 'none';
-                if(ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
-                html5Player.pause();
-                return;
-            }
-
-            // Показываем контейнер
-            if (cinemaBox.style.display === 'none') cinemaBox.style.display = 'block';
-
-            // Переключение режимов
-            if (data.type === 'youtube') {
-                html5Player.classList.add('hidden');
-                // Если ютуб еще не загрузил видео или это новое видео
-                if (ytPlayer && ytPlayer.cueVideoById) {
-                     // Получаем ID из URL или данных
-                     // Здесь предполагаем, что в data.src лежит ID видео для ютуба
-                     let currentData = ytPlayer.getVideoData();
-                     if (!currentData || currentData.video_id !== data.src) {
-                         ytPlayer.loadVideoById(data.src);
-                     }
-                }
-                currentMode = 'youtube';
-            } else {
-                // HTML5 Mode
-                if (html5Player.src !== data.src) html5Player.src = data.src;
-                html5Player.classList.remove('hidden');
-                currentMode = 'html5';
-            }
-
-            // Синхронизация состояния (Play/Pause/Time)
-            syncPlayer(data);
-
-            // UI Админа
-            if (isAdmin) {
-                adminControls.classList.remove('hidden');
-                blocker.style.pointerEvents = 'none'; // Админ может кликать
-                updateControlsUI(data.status);
-            } else {
-                adminControls.classList.add('hidden');
-                blocker.style.pointerEvents = 'all'; // Блокируем клики обычным
-            }
-        });
-
-        function syncPlayer(data) {
-            let currentTime = 0;
-            
-            if (currentMode === 'youtube' && ytPlayer && ytPlayer.seekTo) {
-                currentTime = ytPlayer.getCurrentTime();
-                // Если рассинхрон > 2 сек
-                if (Math.abs(currentTime - data.time) > 2) ytPlayer.seekTo(data.time);
-                
-                if (data.status === 'playing' && ytPlayer.getPlayerState() !== 1) ytPlayer.playVideo();
-                if (data.status === 'paused' && ytPlayer.getPlayerState() === 1) ytPlayer.pauseVideo();
-                
-            } else if (currentMode === 'html5') {
-                currentTime = html5Player.currentTime;
-                if (Math.abs(currentTime - data.time) > 2) html5Player.currentTime = data.time;
-                
-                if (data.status === 'playing' && html5Player.paused) html5Player.play().catch(()=>{});
-                if (data.status === 'paused' && !html5Player.paused) html5Player.pause();
-            }
-        }
-
-        // --- УПРАВЛЕНИЕ АДМИНА ---
-        function getMyTime() {
-            if (currentMode === 'youtube' && ytPlayer) return ytPlayer.getCurrentTime();
-            if (currentMode === 'html5') return html5Player.currentTime;
-            return 0;
-        }
-        
-        function getMyDuration() {
-            if (currentMode === 'youtube' && ytPlayer) return ytPlayer.getDuration();
-            if (currentMode === 'html5') return html5Player.duration;
-            return 100;
-        }
-
-        function updateFirebase(status, timeOverride = null) {
-            const time = timeOverride !== null ? timeOverride : getMyTime();
-            const src = currentMode === 'youtube' ? ytPlayer.getVideoData().video_id : html5Player.src;
-            
-            set(ref(db, 'cinema/state'), {
-                type: currentMode,
-                src: src, // Для ютуба это ID, для файла URL
-                status: status,
-                time: time,
-                timestamp: Date.now()
-            });
-        }
-
-        if (isAdmin) {
-            btnPlay.onclick = () => updateFirebase('playing');
-            btnPause.onclick = () => updateFirebase('paused');
-            
-            progressBar.oninput = () => {
-                updateFirebase('paused', parseFloat(progressBar.value));
-            };
-
-            // Обновление ползунка админа
-            setInterval(() => {
-                if (currentMode) {
-                    const t = getMyTime();
-                    const d = getMyDuration();
-                    progressBar.max = d;
-                    progressBar.value = t;
-                    timeDisplay.innerText = formatTime(t) + " / " + formatTime(d);
-                }
-            }, 1000);
-        }
-        
-        function formatTime(s) {
-            s = Math.floor(s);
-            let m = Math.floor(s / 60);
-            let sec = s % 60;
-            return `${m}:${sec<10?'0'+sec:sec}`;
-        }
-
-        // --- ЗАПУСК ВИДЕО (ПАРСЕР) ---
-        window.startMedia = () => {
-            const url = document.getElementById('mediaUrl').value.trim();
-            if (!url) return;
-            
-            let type = 'html5';
-            let src = url;
-
-            // Простая проверка на YouTube
-            const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(ytRegExp);
-
-            if (match && match[2].length === 11) {
-                type = 'youtube';
-                src = match[2]; // ID Видео
-            }
-
-            set(ref(db, 'cinema/state'), {
-                type: type,
-                src: src,
-                status: 'paused', // Старт на паузе
-                time: 0,
-                timestamp: Date.now()
-            });
-            
-            // Закрыть модалку
-            document.getElementById('adminModal').classList.add('hidden');
-        };
-        
-        window.stopMedia = () => remove(ref(db, 'cinema/state'));
-
-
-        // --- ОБЫЧНЫЙ ЧАТ ---
-        window.joinChat = () => {
+        // --- PRESENCE (СПИСОК ОНЛАЙН) ---
+        window.join = () => {
             const nick = document.getElementById('nickInput').value.trim();
             if (!nick) return;
             myNick = nick;
             localStorage.setItem('chat_nick', nick);
             
-            const userRef = ref(db, 'users/' + nick);
-            set(userRef, { online: true });
-            onDisconnect(userRef).remove();
+            const userRef = ref(db, 'online/' + nick);
+            set(userRef, { lastSeen: Date.now() });
+            onDisconnect(userRef).remove(); // Удаляем при выходе
 
             document.getElementById('loginModal').classList.add('hidden');
-            if (localStorage.getItem('admin_access') === ADMIN_PASS) {
-                isAdmin = true;
-                adminControls.classList.remove('hidden');
-            }
         };
 
-        window.sendMsg = () => {
+        // Обновление списка для админа
+        onValue(ref(db, 'online'), (snap) => {
+            const list = document.getElementById('onlineList');
+            if (list) {
+                list.innerHTML = '<b>В сети:</b><br>';
+                snap.forEach(u => {
+                    list.innerHTML += `<span class="user-tag">${u.key}</span>`;
+                });
+            }
+        });
+
+        // --- YOUTUBE API ---
+        window.onYouTubeIframeAPIReady = () => {
+            ytPlayer = new YT.Player('yt-player', {
+                height: '100%', width: '100%',
+                playerVars: { 'controls': 0, 'disablekb': 1, 'rel': 0 },
+                events: { 'onStateChange': (e) => { if(isAdmin) handleYTState(e); } }
+            });
+        };
+
+        // --- СИНХРОНИЗАЦИЯ ПЛЕЕРА ---
+        onValue(ref(db, 'cinema/state'), (snap) => {
+            currentData = snap.val();
+            const cinema = document.getElementById('cinema');
+            const syncOverlay = document.getElementById('sync-overlay');
+            
+            if (!currentData) {
+                cinema.style.display = 'none';
+                if(ytPlayer?.stopVideo) ytPlayer.stopVideo();
+                htmlPlayer.pause();
+                return;
+            }
+
+            cinema.style.display = 'block';
+            
+            // Если мы не админ и видео не играет — показываем кнопку "Синхронизировать"
+            if (!isAdmin) {
+                syncOverlay.classList.remove('hidden');
+            } else {
+                document.getElementById('adminControls').classList.remove('hidden');
+            }
+
+            if (currentData.type === 'youtube') {
+                htmlPlayer.classList.add('hidden');
+                document.getElementById('yt-player').classList.remove('hidden');
+                let vidId = currentData.src;
+                if(ytPlayer?.getVideoData?.()?.video_id !== vidId) {
+                    ytPlayer.cueVideoById(vidId);
+                }
+            } else {
+                document.getElementById('yt-player').classList.add('hidden');
+                htmlPlayer.classList.remove('hidden');
+                if(htmlPlayer.src !== currentData.src) htmlPlayer.src = currentData.src;
+            }
+        });
+
+        window.forceSync = () => {
+            document.getElementById('sync-overlay').classList.add('hidden');
+            applyState(currentData);
+        };
+
+        function applyState(data) {
+            if (!data) return;
+            if (data.type === 'youtube' && ytPlayer?.seekTo) {
+                ytPlayer.seekTo(data.time, true);
+                if (data.status === 'playing') ytPlayer.playVideo();
+                else ytPlayer.pauseVideo();
+            } else {
+                htmlPlayer.currentTime = data.time;
+                if (data.status === 'playing') htmlPlayer.play();
+                else htmlPlayer.pause();
+            }
+        }
+
+        // --- УПРАВЛЕНИЕ АДМИНА ---
+        window.startMedia = () => {
+            const url = document.getElementById('mediaUrl').value;
+            let type = 'html5', src = url;
+            const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=)([^&?#]+)/);
+            if (ytMatch) { type = 'youtube'; src = ytMatch[1]; }
+
+            set(ref(db, 'cinema/state'), { type, src, status: 'paused', time: 0 });
+            document.getElementById('adminModal').classList.add('hidden');
+        };
+
+        window.stopMedia = () => remove(ref(db, 'cinema/state'));
+
+        window.togglePlay = () => {
+            const newStatus = currentData.status === 'playing' ? 'paused' : 'playing';
+            let time = (currentData.type === 'youtube') ? ytPlayer.getCurrentTime() : htmlPlayer.currentTime;
+            set(ref(db, 'cinema/state'), { ...currentData, status: newStatus, time: time });
+        };
+
+        // Перемотка
+        document.getElementById('progressBar').oninput = (e) => {
+            set(ref(db, 'cinema/state'), { ...currentData, time: parseFloat(e.target.value), status: 'paused' });
+        };
+
+        setInterval(() => {
+            if (isAdmin && currentData) {
+                let t = (currentData.type === 'youtube') ? ytPlayer.getCurrentTime() : htmlPlayer.currentTime;
+                let d = (currentData.type === 'youtube') ? ytPlayer.getDuration() : htmlPlayer.duration;
+                document.getElementById('progressBar').max = d || 100;
+                document.getElementById('progressBar').value = t;
+                document.getElementById('timeShow').innerText = Math.floor(t/60) + ":" + String(Math.floor(t%60)).padStart(2,'0');
+            }
+        }, 1000);
+
+        // --- ЧАТ ---
+        window.send = () => {
             const i = document.getElementById('msgInput');
-            if(i.value.trim()) {
-                push(ref(db, 'messages'), { user: myNick, text: i.value.trim() });
+            if (i.value.trim() && myNick) {
+                push(ref(db, 'chat'), { u: myNick, t: i.value.trim() });
                 i.value = '';
             }
         };
-        onChildAdded(ref(db, 'messages'), (s) => {
+
+        onChildAdded(ref(db, 'chat'), (s) => {
             const m = s.val();
             const d = document.createElement('div');
-            d.className = `message ${m.user === myNick ? 'own' : 'other'}`;
-            d.innerText = `${m.user}: ${m.text}`;
+            d.className = `msg ${m.u === myNick ? 'own' : 'other'}`;
+            d.innerHTML = `<b>${m.u}:</b> ${m.t}`;
             document.getElementById('chatBox').appendChild(d);
             document.getElementById('chatBox').scrollTop = 9999;
         });
 
-        window.logout = () => { localStorage.removeItem('chat_nick'); location.reload(); };
+        // --- МОДАЛКИ ---
         window.openAdmin = () => {
-            if (localStorage.getItem('admin_access') === ADMIN_PASS || prompt("Пароль:") === ADMIN_PASS) {
-                localStorage.setItem('admin_access', ADMIN_PASS);
+            const p = prompt("Пароль:");
+            if (p === "2025") {
                 isAdmin = true;
+                localStorage.setItem('is_admin', 'true');
                 document.getElementById('adminModal').classList.remove('hidden');
-                loadUsers();
             }
         };
         window.closeAdmin = () => document.getElementById('adminModal').classList.add('hidden');
-        
-        function loadUsers() {
-             onValue(ref(db, 'users'), (snap) => {
-                const div = document.getElementById('userList');
-                div.innerHTML = '';
-                snap.forEach(u => div.innerHTML += `<div class="user-item"><span>🟢 ${u.key}</span><button onclick="kick('${u.key}')" style="background:red;border:none;color:white;">Kick</button></div>`);
-            });
-        }
-        window.kick = (n) => set(ref(db, `users/${n}/kicked`), true);
 
-        // Снег
-        function createSnow() {
-            for(let i=0; i<30; i++){
-                const s = document.createElement('div'); s.className='snowflake'; s.innerText='❄';
-                s.style.left=Math.random()*100+'%'; s.style.animationDuration=(Math.random()*5+5)+'s';
-                document.body.appendChild(s);
-            }
-        }
-        createSnow();
-        if(myNick) { document.getElementById('loginModal').classList.add('hidden'); }
+        if (myNick) document.getElementById('loginModal').classList.add('hidden');
     </script>
 </body>
 </html>
