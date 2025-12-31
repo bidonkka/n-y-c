@@ -117,6 +117,13 @@
             background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(249, 115, 22, 0.3));
             padding: 20px;
             border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title-group {
+            flex: 1;
         }
 
         .chat-title {
@@ -129,6 +136,46 @@
         .chat-subtitle {
             color: rgba(255, 255, 255, 0.7);
             font-size: 14px;
+        }
+
+        /* Стили для кнопок админа */
+        .admin-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: rotate(90deg);
+        }
+
+        .delete-btn {
+            background: rgba(220, 38, 38, 0.6);
+            border-radius: 10px;
+            padding: 0 15px;
+            width: auto;
+        }
+
+        .delete-btn:hover {
+            background: rgba(220, 38, 38, 0.9);
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
         }
 
         .messages {
@@ -303,7 +350,7 @@
         }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
 
         .new-year-celebration {
@@ -318,7 +365,6 @@
     </style>
 </head>
 <body>
-    <!-- Модальное окно для ввода имени -->
     <div id="usernameModal" class="username-modal">
         <div class="modal-content">
             <div class="modal-title">🎄 С Новым Годом! 🎄</div>
@@ -329,7 +375,6 @@
     </div>
 
     <div class="container">
-        <!-- Таймер -->
         <div class="timer-box">
             <div class="timer-title" id="timerTitle">⏰ До Нового Года:</div>
             <div class="timer" id="timer">
@@ -348,11 +393,16 @@
             </div>
         </div>
 
-        <!-- Чат -->
         <div class="chat-container">
             <div class="chat-header">
-                <div class="chat-title">💬 Новогодний Чат</div>
-                <div class="chat-subtitle" id="chatSubtitle">Загрузка...</div>
+                <div class="chat-title-group">
+                    <div class="chat-title">💬 Новогодний Чат</div>
+                    <div class="chat-subtitle" id="chatSubtitle">Загрузка...</div>
+                </div>
+                <div class="admin-controls">
+                    <button id="clearChatBtn" class="icon-btn delete-btn hidden" onclick="clearChat()" title="Очистить чат">🗑️</button>
+                    <button class="icon-btn" onclick="adminLogin()" title="Вход для админа">⚙️</button>
+                </div>
             </div>
             <div class="messages" id="messages">
                 <div class="empty-state">Пока нет сообщений... Напиши первым! 🎅</div>
@@ -366,7 +416,8 @@
 
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getDatabase, ref, push, onChildAdded, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        // Добавил 'remove' и 'onValue' в импорты
+        import { getDatabase, ref, push, onChildAdded, remove, onValue, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyDOhC3fadF5gs73HgD3kkeRFE1YGgixgAA",
@@ -381,6 +432,9 @@
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
         const messagesRef = ref(database, 'messages');
+
+        // ПАРОЛЬ АДМИНА
+        const ADMIN_PASSWORD = "2025"; 
 
         let username = localStorage.getItem('username');
         let isNewYear = false;
@@ -440,6 +494,38 @@
             document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
         }
 
+        // --- ЛОГИКА АДМИНА ---
+        window.adminLogin = function() {
+            // Если кнопка уже видна, просто прячем её
+            const btn = document.getElementById('clearChatBtn');
+            if (!btn.classList.contains('hidden')) {
+                btn.classList.add('hidden');
+                return;
+            }
+
+            const inputPass = prompt("🎅 Введите пароль Деда Мороза (Админа):");
+            if (inputPass === ADMIN_PASSWORD) {
+                btn.classList.remove('hidden');
+                alert("Привет, Админ! Теперь ты можешь удалить переписку.");
+            } else if (inputPass !== null) {
+                alert("Неверный пароль! ❄️");
+            }
+        };
+
+        window.clearChat = function() {
+            if (confirm("Вы точно хотите удалить ВСЕ сообщения навсегда? Это действие нельзя отменить.")) {
+                remove(messagesRef)
+                    .then(() => {
+                        console.log("Чат очищен");
+                    })
+                    .catch((error) => {
+                        alert("Ошибка: " + error.message);
+                    });
+            }
+        };
+
+        // --- КОНЕЦ ЛОГИКИ АДМИНА ---
+
         // Установка имени
         window.setUsername = function() {
             const input = document.getElementById('usernameInput');
@@ -466,12 +552,20 @@
             }
         };
 
-        // Получение сообщений
+        // СЛУШАТЕЛЬ ОЧИСТКИ ЧАТА (Если база пустая)
+        onValue(messagesRef, (snapshot) => {
+            if (!snapshot.exists()) {
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.innerHTML = '<div class="empty-state">🎄 Чат был очищен. Начнем с чистого листа! ❄️</div>';
+            }
+        });
+
+        // Получение новых сообщений
         onChildAdded(messagesRef, (snapshot) => {
             const message = snapshot.val();
             const messagesDiv = document.getElementById('messages');
             
-            // Удаляем empty state
+            // Удаляем empty state если есть
             const emptyState = messagesDiv.querySelector('.empty-state');
             if (emptyState) {
                 emptyState.remove();
